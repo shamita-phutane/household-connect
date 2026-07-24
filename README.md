@@ -3,10 +3,6 @@
 A full-stack service marketplace platform (Urban Company-style) connecting customers 
 with verified service partners for home services like cleaning, repairs, and salon services.
 
-## Team
-- **Developer A** — Users, Bookings, Payments, Reviews
-- **Developer B** — Services, Subscription Plans, User Subscriptions, Auth Microservice
-
 ## Tech Stack
 - **Backend:** Java 21, Spring Boot, Spring Data JPA (Hibernate), Spring Security, Maven
 - **Database:** MySQL
