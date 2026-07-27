@@ -1,4 +1,5 @@
 package com.backend.booking.entity;
+import com.backend.services.entity.Services;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import com.backend.user.entity.User;
@@ -59,6 +60,10 @@ public class Booking {
     @ManyToOne
     @JoinColumn(name = "partner_id")
     private User partner;
+    
+    @ManyToOne
+    @JoinColumn(name = "service_id", nullable = false)
+    private Services service;
     
     @OneToOne(mappedBy = "booking", cascade = CascadeType.ALL)
     private Payment payment;
