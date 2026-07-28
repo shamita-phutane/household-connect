@@ -17,4 +17,5 @@ public class PaymentResponseDto {
     private PaymentMethod paymentMethod;
     private PaymentStatus paymentStatus;
     private Long bookingId;
+    private String razorpayOrderId;
 }
