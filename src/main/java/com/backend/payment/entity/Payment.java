@@ -29,15 +29,19 @@ public class Payment {
     @Column(nullable = false)
     private Double amount;
 
-    @NotNull(message = "Payment method is required")
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column
     private PaymentMethod paymentMethod;
 
     @NotNull(message = "Payment status is required")
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private PaymentStatus paymentStatus;
+    @Column(name = "razorpay_order_id")
+    private String razorpayOrderId;
+
+    @Column(name = "razorpay_payment_id")
+    private String razorpayPaymentId;
     @OneToOne
     @JoinColumn(name = "booking_id", nullable = false)
     private Booking booking;

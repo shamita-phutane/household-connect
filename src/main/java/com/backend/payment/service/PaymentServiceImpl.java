@@ -15,16 +15,25 @@ import com.backend.payment.dto.PaymentRequestDto;
 import com.backend.payment.dto.PaymentResponseDto;
 import com.backend.payment.entity.Payment;
 import com.backend.payment.repository.PaymentRepository;
+import org.json.JSONObject;
+
+import com.razorpay.Order;
+import com.razorpay.RazorpayClient;
+import com.razorpay.RazorpayException;
 
 @Service
 public class PaymentServiceImpl implements PaymentService {
 
     private final PaymentRepository paymentRepository;
     private final BookingRepository bookingRepository;
+    private final RazorpayClient razorpayClient;
+    
 
-    public PaymentServiceImpl(PaymentRepository paymentRepository, BookingRepository bookingRepository) {
+    public PaymentServiceImpl(PaymentRepository paymentRepository, BookingRepository bookingRepository,RazorpayClient razorpayClient) {
         this.paymentRepository = paymentRepository;
         this.bookingRepository = bookingRepository;
+        this.razorpayClient = razorpayClient;
+        
     }
 
     @Override
@@ -39,17 +48,30 @@ public class PaymentServiceImpl implements PaymentService {
             throw new DuplicateResourceException(
                     "Payment already exists for booking id: " + requestDto.getBookingId());
         }
+        JSONObject orderRequest = new JSONObject();
+        orderRequest.put("amount", booking.getFinalAmount().intValue() * 100);
+        orderRequest.put("currency", "INR");
+        orderRequest.put("receipt", "booking_" + booking.getBookingId());
+        Order razorpayOrder;
 
+        try {
+            razorpayOrder = razorpayClient.orders.create(orderRequest);
+        } catch (RazorpayException e) {
+            throw new RuntimeException("Failed to create Razorpay order", e);
+        }
+        String razorpayOrderId = razorpayOrder.get("id").toString();
+       
         Payment payment = Payment.builder()
-                .amount(requestDto.getAmount())
+                .amount(booking.getFinalAmount())
                 .paymentMethod(requestDto.getPaymentMethod())
                 .paymentStatus(PaymentStatus.PENDING)
+                .razorpayOrderId(razorpayOrderId)
                 .booking(booking)
                 .build();
-
         Payment savedPayment = paymentRepository.save(payment);
 
         return convertToResponse(savedPayment);
+        
     }
 
     @Override
@@ -104,6 +126,7 @@ public class PaymentServiceImpl implements PaymentService {
                 .paymentMethod(payment.getPaymentMethod())
                 .paymentStatus(payment.getPaymentStatus())
                 .bookingId(payment.getBooking().getBookingId())
+                .razorpayOrderId(payment.getRazorpayOrderId())
                 .build();
     }
 }
