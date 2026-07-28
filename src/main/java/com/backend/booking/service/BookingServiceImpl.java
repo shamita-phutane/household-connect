@@ -2,6 +2,10 @@ package com.backend.booking.service;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import com.backend.user.entity.User;
+import com.backend.user.repository.UserRepository;
+import com.backend.services.entity.Services;
+import com.backend.services.repository.ServicesRepository;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,20 +18,21 @@ import com.backend.common.enums.BookingStatus;
 import com.backend.common.enums.Role;
 import com.backend.exception.InvalidRequestException;
 import com.backend.exception.ResourceNotFoundException;
-import com.backend.user.entity.User;
-import com.backend.user.repository.UserRepository;
 
 @Service
 public class BookingServiceImpl implements BookingService {
+	private final BookingRepository bookingRepository;
+	private final UserRepository userRepository;
+	private final ServicesRepository servicesRepository;
 
-    private final BookingRepository bookingRepository;
-    private final UserRepository userRepository;
-
-    public BookingServiceImpl(BookingRepository bookingRepository, UserRepository userRepository) {
-        this.bookingRepository = bookingRepository;
-        this.userRepository = userRepository;
-    }
-
+	public BookingServiceImpl(BookingRepository bookingRepository, UserRepository userRepository,
+	        ServicesRepository servicesRepository) {
+	    this.bookingRepository = bookingRepository;
+	    this.userRepository = userRepository;
+	    this.servicesRepository = servicesRepository;
+	}
+   
+    
     @Override
     @Transactional
     public BookingResponseDto createBooking(BookingRequestDto requestDto) {
@@ -36,6 +41,10 @@ public class BookingServiceImpl implements BookingService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Customer not found with id: " + requestDto.getCustomerId()));
 
+        Services service = servicesRepository.findById(requestDto.getServiceId())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Service not found with id: " + requestDto.getServiceId()));
+
         Booking booking = Booking.builder()
                 .date(requestDto.getDate())
                 .bookingTime(requestDto.getBookingTime())
@@ -43,6 +52,7 @@ public class BookingServiceImpl implements BookingService {
                 .serviceAddress(requestDto.getServiceAddress())
                 .status(BookingStatus.PENDING)
                 .customer(customer)
+                .service(service)
                 .build();
 
         Booking savedBooking = bookingRepository.save(booking);

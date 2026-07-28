@@ -18,6 +18,8 @@ public class BookingRequestDto {
 
     @NotNull(message = "Customer id is required")
     private Long customerId;
+    @NotNull(message = "Service id is required")
+    private Long serviceId;
 
     @NotNull(message = "Booking date is required")
     @FutureOrPresent(message = "Booking date cannot be in the past")
