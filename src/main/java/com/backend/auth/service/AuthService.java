@@ -6,34 +6,35 @@ import org.springframework.stereotype.Service;
 
 import com.backend.auth.dto.LoginRequestDto;
 import com.backend.auth.dto.LoginResponseDto;
-import com.backend.auth.entity.AuthUser;
-import com.backend.auth.repository.AuthUserRepository;
-import com.backend.auth.security.JwtService;
-
+import com.backend.user.entity.User;
+import com.backend.user.repository.UserRepository;
+import com.backend.security.JwtService;
 @Service
 public class AuthService {
 
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
-    private final AuthUserRepository authUserRepository;
+    private final UserRepository userRepository;
 
     public AuthService(AuthenticationManager authenticationManager,
                        JwtService jwtService,
-                       AuthUserRepository authUserRepository) {
+                       UserRepository userRepository) {
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
-        this.authUserRepository = authUserRepository;
+        this.userRepository = userRepository;
     }
 
     public LoginResponseDto login(LoginRequestDto request) {
 
+        // Let BadCredentialsException / DisabledException propagate naturally -
+        // GlobalExceptionHandler maps them to proper 401 / 403 responses.
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         request.getEmail(),
                         request.getPassword()));
 
-        AuthUser user = authUserRepository.findByEmail(request.getEmail())
-                .orElseThrow();
+    	User user = userRepository.findByEmail(request.getEmail())
+    	        .orElseThrow(() -> new RuntimeException("Invalid email or password"));
 
         String token = jwtService.generateToken(user);
 

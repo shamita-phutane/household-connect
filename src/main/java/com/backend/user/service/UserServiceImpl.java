@@ -7,8 +7,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.backend.common.enums.Role;
 import com.backend.exception.DuplicateResourceException;
+import com.backend.exception.InvalidRequestException;
 import com.backend.exception.ResourceNotFoundException;
+import com.backend.security.AuthUtils;
 import com.backend.user.dto.UserRequestDto;
 import com.backend.user.dto.UserResponseDto;
 import com.backend.user.entity.User;
@@ -30,6 +33,13 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public UserResponseDto registerUser(UserRequestDto requestDto) {
 
+        // Public self-registration must never be able to mint an ADMIN account.
+        // Admins are created separately (e.g. directly by an existing admin/DB seed).
+        if (requestDto.getRole() == Role.ADMIN) {
+            throw new InvalidRequestException(
+                    "Self-registration as ADMIN is not allowed");
+        }
+
         if (userRepository.existsByEmail(requestDto.getEmail())) {
             throw new DuplicateResourceException(
                     "Email already exists: " + requestDto.getEmail());
@@ -48,7 +58,7 @@ public class UserServiceImpl implements UserService {
                 .city(requestDto.getCity())
                 .role(requestDto.getRole())
                 .avgRating(0.0)
-                .verified(false)
+                .verified(true) // auto-verified on signup, no separate approval step
                 .build();
 
         User savedUser = userRepository.save(user);
@@ -99,6 +109,13 @@ public class UserServiceImpl implements UserService {
                     throw new DuplicateResourceException(
                             "Phone number already exists: " + requestDto.getPhone());
                 });
+
+        // A user's role can only be changed by an admin. Without this, any user
+        // could PUT their own profile with role=ADMIN and grant themselves access.
+        if (requestDto.getRole() != user.getRole() && !AuthUtils.isAdmin()) {
+            throw new InvalidRequestException(
+                    "Only an admin can change a user's role");
+        }
 
         user.setName(requestDto.getName());
         user.setEmail(requestDto.getEmail());

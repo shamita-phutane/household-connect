@@ -4,8 +4,16 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.AuthenticationServiceException;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.LockedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -13,6 +21,40 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    // Wrong email/password. Kept deliberately generic - never confirm whether
+    // the email itself exists, so callers can't enumerate registered accounts.
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<Map<String, Object>> handleBadCredentials(BadCredentialsException ex) {
+        return buildResponse(HttpStatus.UNAUTHORIZED, "Invalid email or password");
+    }
+
+    @ExceptionHandler(DisabledException.class)
+    public ResponseEntity<Map<String, Object>> handleDisabled(DisabledException ex) {
+        return buildResponse(HttpStatus.FORBIDDEN, "Account is not verified yet");
+    }
+
+    @ExceptionHandler(LockedException.class)
+    public ResponseEntity<Map<String, Object>> handleLocked(LockedException ex) {
+        return buildResponse(HttpStatus.FORBIDDEN, "Account is locked");
+    }
+
+    // Catch-all for any other Spring Security authentication failure so it never
+    // falls through to the generic 500 handler below.
+    @ExceptionHandler({AuthenticationException.class, AuthenticationServiceException.class})
+    public ResponseEntity<Map<String, Object>> handleAuthentication(AuthenticationException ex) {
+        return buildResponse(HttpStatus.UNAUTHORIZED, "Authentication failed");
+    }
+
+    // Authenticated, but wrong role for this endpoint (e.g. CUSTOMER hitting an
+    // ADMIN-only route) when triggered from within a service/controller method
+    // rather than the security filter chain (which uses accessDeniedHandler()).
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<Map<String, Object>> handleAccessDenied(AccessDeniedException ex) {
+        return buildResponse(HttpStatus.FORBIDDEN, "You do not have permission to access this resource");
+    }
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<Map<String, Object>> handleNotFound(ResourceNotFoundException ex) {
@@ -40,7 +82,7 @@ public class GlobalExceptionHandler {
    
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGeneric(Exception ex) {
-        ex.printStackTrace();
+        log.error("Unhandled exception", ex);
         return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Something went wrong");
     }
 

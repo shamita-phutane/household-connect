@@ -1,9 +1,11 @@
-package com.backend.auth.security;
+package com.backend.security;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Date;
+
+import com.backend.user.entity.User;
 import java.util.function.Function;
 
 import javax.crypto.SecretKey;
@@ -11,8 +13,6 @@ import javax.crypto.SecretKey;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
-
-import com.backend.auth.entity.AuthUser;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -25,25 +25,24 @@ public class JwtService {
     private String jwtSecret;
 
     @Value("${jwt.expiration}")
-    private long jwtExpiration;
+    private long jwtExpirationMs;
 
     private SecretKey getSigningKey() {
         return Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
     }
-
-    public String generateToken(AuthUser user) {
+    public String generateToken(User user) {
 
         Map<String, Object> claims = new HashMap<>();
 
         claims.put("userId", user.getUserId());
-        claims.put("role", user.getRole().name());
         claims.put("name", user.getName());
+        claims.put("role", user.getRole().name());
 
         return Jwts.builder()
                 .claims(claims)
                 .subject(user.getEmail())
                 .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + jwtExpiration))
+                .expiration(new Date(System.currentTimeMillis() + jwtExpirationMs))
                 .signWith(getSigningKey())
                 .compact();
     }
@@ -73,9 +72,7 @@ public class JwtService {
     }
 
     public boolean isTokenValid(String token, UserDetails userDetails) {
-
         final String username = extractUsername(token);
-
         return username.equals(userDetails.getUsername())
                 && !isTokenExpired(token);
     }
