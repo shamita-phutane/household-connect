@@ -3,6 +3,7 @@ package com.backend.review.service;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,6 +17,7 @@ import com.backend.review.dto.ReviewRequestDto;
 import com.backend.review.dto.ReviewResponseDto;
 import com.backend.review.entity.Review;
 import com.backend.review.repository.ReviewRepository;
+import com.backend.security.AuthUtils;
 
 @Service
 public class ReviewServiceImpl implements ReviewService {
@@ -35,6 +37,11 @@ public class ReviewServiceImpl implements ReviewService {
         Booking booking = bookingRepository.findById(requestDto.getBookingId())
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Booking not found with id: " + requestDto.getBookingId()));
+
+        // Only the customer who booked the service can review it.
+        if (!AuthUtils.isAdmin() && !AuthUtils.isSelf(booking.getCustomer().getUserId())) {
+            throw new AccessDeniedException("You can only review your own bookings");
+        }
 
         if (booking.getStatus() != BookingStatus.COMPLETED) {
             throw new InvalidRequestException(
@@ -58,6 +65,9 @@ public class ReviewServiceImpl implements ReviewService {
         return convertToResponse(savedReview);
     }
 
+    // Reviews are treated as public-ish, viewable by any signed-in user
+    // (a customer browsing a partner's reputation, a partner checking their
+    // own feedback, etc.) so reads are intentionally left unrestricted here.
     @Override
     public ReviewResponseDto getReviewById(Long reviewId) {
         Review review = reviewRepository.findById(reviewId)
@@ -86,6 +96,12 @@ public class ReviewServiceImpl implements ReviewService {
     public void deleteReview(Long reviewId) {
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new ResourceNotFoundException("Review not found with id: " + reviewId));
+
+        boolean isAuthor = AuthUtils.isSelf(review.getBooking().getCustomer().getUserId());
+        if (!AuthUtils.isAdmin() && !isAuthor) {
+            throw new AccessDeniedException("You can only delete your own reviews");
+        }
+
         reviewRepository.delete(review);
     }
 
