@@ -16,18 +16,6 @@ Monolith backend (Spring Boot) + two standalone microservices:
 1. **Auth Microservice** — issues JWTs for Customer/Partner login, validated statelessly by the monolith
 2. **.NET Invoice Microservice** — generates invoices for completed bookings
 
-## Modules & Features
-
-### Users, Bookings, Payments, Reviews (Developer A)
-- Customer: Book Service, View Booking, Make Payment, Review Service
-- Partner: View Assigned Bookings, Accept Booking, Complete Booking
-- Admin: Manage Users, Verify Partners, View Bookings
-
-### Services, Subscription Plans, User Subscriptions (Developer B)
-- Customer: Register, Login, Browse Services, Purchase Subscription
-- Partner: Login (via Auth Microservice)
-- Admin: Manage Services, Manage Subscription Plans
-
 ## Entity Relationship Diagram
 See `docs/ER-diagram.png`
 
