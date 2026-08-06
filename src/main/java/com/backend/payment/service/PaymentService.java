@@ -5,24 +5,29 @@ import java.util.List;
 import com.backend.common.enums.PaymentStatus;
 import com.backend.payment.dto.PaymentRequestDto;
 import com.backend.payment.dto.PaymentResponseDto;
+import com.backend.payment.dto.PaymentVerificationRequestDto;
 
 public interface PaymentService {
 
-    // Create a payment for a booking (status defaults to PENDING)
+    // Create Razorpay order
     PaymentResponseDto createPayment(PaymentRequestDto requestDto);
+
+    // Verify successful Razorpay payment
+    PaymentResponseDto verifyPayment(PaymentVerificationRequestDto requestDto);
 
     // Get payment by ID
     PaymentResponseDto getPaymentById(Long paymentId);
 
-    // Get payment for a specific booking
+    // Get payment for a booking
     PaymentResponseDto getPaymentByBooking(Long bookingId);
 
-    // Get all payments
+    // Admin
     List<PaymentResponseDto> getAllPayments();
 
-    // Update payment status (e.g. SUCCESS, FAILED, REFUNDED)
+    // Admin
     PaymentResponseDto updateStatus(Long paymentId, PaymentStatus status);
 
-    // Delete a payment
+    // Admin
     void deletePayment(Long paymentId);
+
 }

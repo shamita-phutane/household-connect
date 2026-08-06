@@ -1,5 +1,7 @@
 package com.backend.services.dto;
 
+import com.backend.common.enums.ServiceCategory;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -17,12 +19,17 @@ public class ServiceRequestDto {
     @NotBlank(message = "Service name is required")
     private String svcName;
 
-    @NotBlank(message = "Category is required")
-    private String category;
+    @NotNull(message = "Category is required")
+    private ServiceCategory category;
 
     @NotNull(message = "Base price is required")
     @Positive(message = "Base price must be positive")
     private Double basePrice;
 
+    @NotBlank(message = "Description is required")
+    private String description;
+    
+    @NotBlank(message = "Image URL is required")
+    private String imageUrl;
 
 }

@@ -52,7 +52,8 @@ public class ServicesServiceImp implements ServicesService {
         entity.setSvcName(requestDto.getSvcName());
         entity.setCategory(requestDto.getCategory());
         entity.setBasePrice(requestDto.getBasePrice());
-
+        entity.setDescription(requestDto.getDescription());
+        entity.setImageUrl(requestDto.getImageUrl());
         com.backend.services.entity.Services updated = serviceRepository.save(entity);
         return modelMapper.map(updated, ServiceResponseDto.class);
     }

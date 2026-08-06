@@ -1,0 +1,39 @@
+.subscription-section{
+
+    padding:60px 0 150px;
+
+    background:var(--background);
+
+}
+
+.plans-grid{
+
+    display:grid;
+
+    grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
+
+    gap:32px;
+
+    margin-top:56px;
+
+}
+
+@media(max-width:768px){
+
+    .subscription-section{
+
+        padding:40px 0 80px;
+
+    }
+
+    .plans-grid{
+
+        grid-template-columns:1fr;
+
+        gap:22px;
+
+        margin-top:40px;
+
+    }
+
+}

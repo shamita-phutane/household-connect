@@ -3,6 +3,7 @@ package com.backend.payment.service;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.json.JSONObject;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,11 +15,10 @@ import com.backend.exception.DuplicateResourceException;
 import com.backend.exception.ResourceNotFoundException;
 import com.backend.payment.dto.PaymentRequestDto;
 import com.backend.payment.dto.PaymentResponseDto;
+import com.backend.payment.dto.PaymentVerificationRequestDto;
 import com.backend.payment.entity.Payment;
 import com.backend.payment.repository.PaymentRepository;
 import com.backend.security.AuthUtils;
-import org.json.JSONObject;
-
 import com.razorpay.Order;
 import com.razorpay.RazorpayClient;
 import com.razorpay.RazorpayException;
@@ -79,6 +79,43 @@ public class PaymentServiceImpl implements PaymentService {
 
         return convertToResponse(savedPayment);
         
+    }
+    @Override
+    @Transactional
+    public PaymentResponseDto verifyPayment(
+            PaymentVerificationRequestDto requestDto) {
+
+        Payment payment = paymentRepository.findById(requestDto.getPaymentId())
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Payment not found with id: " + requestDto.getPaymentId()));
+
+        if (!AuthUtils.isAdmin()
+                && !AuthUtils.isSelf(payment.getBooking().getCustomer().getUserId())) {
+
+            throw new AccessDeniedException(
+                    "You can only verify your own payment");
+
+        }
+
+        if (!payment.getRazorpayOrderId().equals(requestDto.getRazorpayOrderId())) {
+
+            throw new IllegalArgumentException(
+                    "Invalid Razorpay order id");
+
+        }
+
+        payment.setRazorpayPaymentId(
+                requestDto.getRazorpayPaymentId());
+
+        payment.setPaymentStatus(
+                PaymentStatus.SUCCESS);
+
+        Payment updated =
+                paymentRepository.save(payment);
+
+        return convertToResponse(updated);
+
     }
 
     @Override

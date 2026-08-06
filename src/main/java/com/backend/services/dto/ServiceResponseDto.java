@@ -1,5 +1,7 @@
 package com.backend.services.dto;
 
+import com.backend.common.enums.ServiceCategory;
+
 import lombok.Getter;
 import lombok.Setter;
 
@@ -8,7 +10,15 @@ import lombok.Setter;
 public class ServiceResponseDto {
 
     private Long serviceId;
+
     private String svcName;
-    private String category;
+
+    private ServiceCategory category;
+
     private Double basePrice;
+
+    private String description;
+    
+    private String imageUrl;
+
 }

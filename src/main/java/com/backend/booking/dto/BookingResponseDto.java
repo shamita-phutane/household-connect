@@ -15,15 +15,31 @@ import lombok.*;
 public class BookingResponseDto {
 
     private Long bookingId;
+
     private LocalDate date;
+
     private LocalTime bookingTime;
+
     private BookingStatus status;
+
     private Double finalAmount;
+
+    private Double originalAmount;
+
+    private Double discountAmount;
+
     private String serviceAddress;
 
     private Long customerId;
+
     private String customerName;
 
     private Long partnerId;
+
     private String partnerName;
+
+    private Long serviceId;
+
+    private String serviceName;
+
 }

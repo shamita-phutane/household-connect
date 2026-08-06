@@ -1,0 +1,153 @@
+.book-service{
+
+    padding:70px 0 100px;
+
+    min-height:100vh;
+
+}
+
+.book-service h1{
+
+    font-family:"Fraunces",serif;
+
+    font-size:3rem;
+
+    margin-bottom:40px;
+
+    color:var(--text-primary);
+
+}
+
+.booking-form{
+
+    max-width:720px;
+
+    margin:auto;
+
+    background:var(--surface);
+
+    border:1px solid var(--border);
+
+    border-radius:24px;
+
+    padding:40px;
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:22px;
+
+    box-shadow:var(--box-shadow);
+
+}
+
+.booking-form label{
+
+    font-weight:600;
+
+    color:var(--text-secondary);
+
+    margin-bottom:6px;
+
+}
+
+.booking-form input,
+
+.booking-form select,
+
+.booking-form textarea{
+
+    width:100%;
+
+    padding:16px;
+
+    border:1px solid var(--border);
+
+    border-radius:12px;
+
+    background:var(--surface-secondary);
+
+    color:var(--text-primary);
+
+    font-size:15px;
+
+    outline:none;
+
+    transition:var(--transition);
+
+}
+
+.booking-form input:focus,
+
+.booking-form select:focus,
+
+.booking-form textarea:focus{
+
+    border-color:var(--accent-color);
+
+}
+
+.booking-form textarea{
+
+    resize:vertical;
+
+    min-height:120px;
+
+}
+
+.booking-form button{
+
+    margin-top:10px;
+
+    padding:16px;
+
+    border:none;
+
+    border-radius:12px;
+
+    background:var(--primary-color);
+
+    color:#12151d;
+
+    font-size:16px;
+
+    font-weight:700;
+
+    cursor:pointer;
+
+    transition:var(--transition);
+
+}
+
+.booking-form button:hover:not(:disabled){
+
+    background:var(--primary-hover);
+
+    transform:translateY(-2px);
+
+}
+
+.booking-form button:disabled{
+
+    opacity:.65;
+
+    cursor:not-allowed;
+
+}
+
+@media(max-width:768px){
+
+    .booking-form{
+
+        padding:24px;
+
+    }
+
+    .book-service h1{
+
+        font-size:2.2rem;
+
+    }
+
+}

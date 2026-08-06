@@ -1,0 +1,43 @@
+:root {
+
+    /* ===== Base surfaces — deep charcoal, not pure black ===== */
+    --background-color: #0b0d12;
+    --background: #0b0d12;
+
+    --surface: #12151d;
+    --surface-secondary: #1a1e28;
+    --white: #12151d;
+
+    /* ===== Text ===== */
+    --text-primary: #eceae4;
+    --text-secondary: #99a0b0;
+
+    /* ===== Accent — muted brass, used sparingly ===== */
+    --primary-color: #c6a15b;
+    --primary-hover: #ad8946;
+    --accent-color: #c6a15b;
+    --accent-hover: #ad8946;
+
+    --secondary-color: #eceae4;
+
+    /* ===== Lines ===== */
+    --border-color: #262b37;
+    --border: #262b37;
+
+    /* ===== Status ===== */
+    --success-color: #5fae84;
+    --danger-color: #d4776e;
+
+    /* ===== Layout ===== */
+    --container-width: 1200px;
+    --container: 1280px;
+
+    --border-radius: 12px;
+    --radius: 20px;
+
+    --transition: 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+
+    --box-shadow: 0 24px 48px rgba(0, 0, 0, 0.45);
+    --box-shadow-sm: 0 10px 24px rgba(0, 0, 0, 0.35);
+
+}
