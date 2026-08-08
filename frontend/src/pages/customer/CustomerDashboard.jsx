@@ -1,14 +1,159 @@
 import "./CustomerDashboard.css";
 
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+
 import {
     FaCalendarCheck,
     FaClipboardList,
-    FaCreditCard,
+    FaPiggyBank,
     FaCrown,
     FaArrowRight
 } from "react-icons/fa";
 
+import { useAuth } from "../../context/AuthContext";
+import { getCustomerBookings } from "../../api/bookingApi";
+import { getSubscriptionsByUser } from "../../api/userSubscriptionApi";
+
+function statusClass(status) {
+
+    switch (status) {
+
+        case "COMPLETED":
+            return "completed";
+
+        case "PENDING":
+            return "pending";
+
+        case "ACCEPTED":
+            return "accepted";
+
+        case "CANCELLED":
+            return "cancelled";
+
+        default:
+            return "";
+
+    }
+
+}
+
 function CustomerDashboard() {
+
+    const { user } = useAuth();
+
+    const navigate = useNavigate();
+
+    const [bookings, setBookings] = useState([]);
+
+    const [activePlan, setActivePlan] = useState(null);
+
+    const [loading, setLoading] = useState(true);
+
+    const [error, setError] = useState("");
+
+    useEffect(() => {
+
+        async function loadDashboard() {
+
+            try {
+
+                const [bookingData, subscriptionData] = await Promise.all([
+
+                    getCustomerBookings(user.userId),
+
+                    getSubscriptionsByUser(user.userId)
+
+                ]);
+
+                setBookings(bookingData);
+
+                const active = subscriptionData.find(
+                    subscription => subscription.status === "ACTIVE"
+                );
+
+                setActivePlan(active || null);
+
+            }
+
+            catch (err) {
+
+                console.error(err);
+
+                setError("Unable to load your dashboard right now.");
+
+            }
+
+            finally {
+
+                setLoading(false);
+
+            }
+
+        }
+
+        loadDashboard();
+
+    }, [user.userId]);
+
+    if (loading) {
+
+        return (
+
+            <div className="customer-dashboard">
+
+                <div className="container">
+
+                    <h2>Loading dashboard...</h2>
+
+                </div>
+
+            </div>
+
+        );
+
+    }
+
+    if (error) {
+
+        return (
+
+            <div className="customer-dashboard">
+
+                <div className="container">
+
+                    <h2>{error}</h2>
+
+                </div>
+
+            </div>
+
+        );
+
+    }
+
+    const upcomingCount = bookings.filter(
+        booking =>
+            booking.status === "PENDING" ||
+            booking.status === "ACCEPTED"
+    ).length;
+
+    const totalSaved = bookings.reduce(
+        (sum, booking) => sum + (booking.discountAmount || 0),
+        0
+    );
+
+    const recentBookings = [...bookings]
+        .sort((a, b) => {
+
+            if (a.date === b.date) {
+                return 0;
+            }
+
+            return a.date < b.date ? 1 : -1;
+
+        })
+        .slice(0, 3);
 
     return (
 
@@ -28,7 +173,7 @@ function CustomerDashboard() {
 
                         <h1>
 
-                            Welcome back 👋
+                            Welcome back, {user.name?.split(" ")[0]} 👋
 
                         </h1>
 
@@ -56,7 +201,7 @@ function CustomerDashboard() {
 
                         <span>
 
-                            2
+                            {upcomingCount}
 
                         </span>
 
@@ -74,7 +219,7 @@ function CustomerDashboard() {
 
                         <span>
 
-                            18
+                            {bookings.length}
 
                         </span>
 
@@ -82,17 +227,17 @@ function CustomerDashboard() {
 
                     <div className="dashboard-card">
 
-                        <FaCreditCard className="card-icon"/>
+                        <FaPiggyBank className="card-icon"/>
 
                         <h3>
 
-                            Saved
+                            Total Saved
 
                         </h3>
 
                         <span>
 
-                            ₹240
+                            ₹{totalSaved.toFixed(0)}
 
                         </span>
 
@@ -110,7 +255,7 @@ function CustomerDashboard() {
 
                         <span>
 
-                            Gold
+                            {activePlan ? activePlan.planName : "None"}
 
                         </span>
 
@@ -126,7 +271,7 @@ function CustomerDashboard() {
 
                 <div className="actions-grid">
 
-                    <button>
+                    <button onClick={() => navigate("/customer/book-service")}>
 
                         Book a Service
 
@@ -134,7 +279,7 @@ function CustomerDashboard() {
 
                     </button>
 
-                    <button>
+                    <button onClick={() => navigate("/customer/bookings")}>
 
                         My Bookings
 
@@ -142,17 +287,9 @@ function CustomerDashboard() {
 
                     </button>
 
-                    <button>
+                    <button onClick={() => navigate("/#plans")}>
 
-                        Payments
-
-                        <FaArrowRight/>
-
-                    </button>
-
-                    <button>
-
-                        Profile
+                        View Plans
 
                         <FaArrowRight/>
 
@@ -166,75 +303,64 @@ function CustomerDashboard() {
 
                 </h2>
 
-                <div className="recent-bookings">
+                {
 
-                    <div className="booking-row">
+                    recentBookings.length === 0
 
-                        <span>
+                        ?
 
-                            AC Repair
+                        <div className="recent-bookings">
 
-                        </span>
+                            <div className="empty-state">
 
-                        <span className="completed">
+                                You haven't made any bookings yet.
 
-                            Completed
+                            </div>
 
-                        </span>
+                        </div>
 
-                        <strong>
+                        :
 
-                            ₹599
+                        <div className="recent-bookings">
 
-                        </strong>
+                            {
 
-                    </div>
+                                recentBookings.map(booking => (
 
-                    <div className="booking-row">
+                                    <div
 
-                        <span>
+                                        key={booking.bookingId}
+                                        className="booking-row"
 
-                            Deep Cleaning
+                                    >
 
-                        </span>
+                                        <span>
 
-                        <span className="pending">
+                                            {booking.serviceName}
 
-                            Pending
+                                        </span>
 
-                        </span>
+                                        <span className={statusClass(booking.status)}>
 
-                        <strong>
+                                            {booking.status}
 
-                            ₹1299
+                                        </span>
 
-                        </strong>
+                                        <strong>
 
-                    </div>
+                                            ₹{booking.finalAmount}
 
-                    <div className="booking-row">
+                                        </strong>
 
-                        <span>
+                                    </div>
 
-                            Electrical Repair
+                                ))
 
-                        </span>
+                            }
 
-                        <span className="accepted">
+                        </div>
 
-                            Accepted
-
-                        </span>
-
-                        <strong>
-
-                            ₹399
-
-                        </strong>
-
-                    </div>
-
-                </div>
+                }
 
             </div>
 

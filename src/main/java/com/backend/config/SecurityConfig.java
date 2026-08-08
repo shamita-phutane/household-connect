@@ -150,8 +150,11 @@ public class SecurityConfig {
 
                         .requestMatchers("/api/bookings/**")
                         .hasAnyRole("CUSTOMER", "PARTNER", "ADMIN")
+                        
 
                         .anyRequest().authenticated());
+        
+        
 
         return http.build();
     }

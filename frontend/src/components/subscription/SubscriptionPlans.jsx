@@ -52,7 +52,7 @@ function SubscriptionPlans() {
 
     return (
 
-        <section className="subscription-section">
+        <section id="plans" className="subscription-section">
 
             <div className="container">
 

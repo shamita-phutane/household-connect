@@ -18,6 +18,7 @@ import com.backend.common.enums.PaymentStatus;
 import com.backend.payment.dto.PaymentRequestDto;
 import com.backend.payment.dto.PaymentResponseDto;
 import com.backend.payment.dto.PaymentVerificationRequestDto;
+import com.backend.payment.dto.RazorpayKeyResponseDto;
 import com.backend.payment.service.PaymentService;
 
 import jakarta.validation.Valid;
@@ -30,6 +31,16 @@ public class PaymentController {
 
     public PaymentController(PaymentService paymentService) {
         this.paymentService = paymentService;
+    }
+
+    // Publishable key only - needed by the frontend to open Razorpay Checkout.
+    // Must come before "/{paymentId}" so it isn't swallowed by that mapping.
+    @GetMapping("/razorpay-key")
+    public ResponseEntity<RazorpayKeyResponseDto> getRazorpayKey() {
+        return ResponseEntity.ok(
+                RazorpayKeyResponseDto.builder()
+                        .keyId(paymentService.getRazorpayKeyId())
+                        .build());
     }
 
     @PostMapping("/create-order")

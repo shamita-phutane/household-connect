@@ -51,7 +51,7 @@ function Login() {
                     break;
 
                 default:
-                    navigate("/customer/dashboard");
+                    navigate("/my-bookings");
             }
 
         } catch (error) {

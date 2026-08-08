@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.json.JSONObject;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,22 +23,33 @@ import com.backend.security.AuthUtils;
 import com.razorpay.Order;
 import com.razorpay.RazorpayClient;
 import com.razorpay.RazorpayException;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import java.util.Base64;
 
 @Service
 public class PaymentServiceImpl implements PaymentService {
 
+    private final String razorpayKeySecret;
     private final PaymentRepository paymentRepository;
     private final BookingRepository bookingRepository;
     private final RazorpayClient razorpayClient;
-    
+    private final String razorpayKeyId;
 
-    public PaymentServiceImpl(PaymentRepository paymentRepository, BookingRepository bookingRepository,RazorpayClient razorpayClient) {
+    public PaymentServiceImpl(PaymentRepository paymentRepository,
+            BookingRepository bookingRepository,
+            RazorpayClient razorpayClient,
+            @Value("${razorpay.key.id}") String razorpayKeyId,
+            @Value("${razorpay.key.secret}") String razorpayKeySecret) {
         this.paymentRepository = paymentRepository;
         this.bookingRepository = bookingRepository;
         this.razorpayClient = razorpayClient;
-        
-    }
+        this.razorpayKeyId = razorpayKeyId != null ? razorpayKeyId.trim() : null;
+        this.razorpayKeySecret = razorpayKeySecret != null ? razorpayKeySecret.trim() : null;
 
+        System.out.println("KEY_ID = " + this.razorpayKeyId);
+        System.out.println("KEY_SECRET = " + this.razorpayKeySecret);
+    }
     @Override
     @Transactional
     public PaymentResponseDto createPayment(PaymentRequestDto requestDto) {
@@ -85,37 +97,29 @@ public class PaymentServiceImpl implements PaymentService {
     public PaymentResponseDto verifyPayment(
             PaymentVerificationRequestDto requestDto) {
 
-        Payment payment = paymentRepository.findById(requestDto.getPaymentId())
+        Payment payment = paymentRepository
+                .findByRazorpayOrderId(requestDto.getRazorpayOrderId())
                 .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "Payment not found with id: " + requestDto.getPaymentId()));
+                        new ResourceNotFoundException("Payment not found"));
 
-        if (!AuthUtils.isAdmin()
-                && !AuthUtils.isSelf(payment.getBooking().getCustomer().getUserId())) {
+        // ✅ Signature verification
+        String generatedSignature = generateSignature(
+                requestDto.getRazorpayOrderId(),
+                requestDto.getRazorpayPaymentId()
+        );
 
-            throw new AccessDeniedException(
-                    "You can only verify your own payment");
+        if (!generatedSignature.equals(requestDto.getRazorpaySignature())) {
 
+            payment.setPaymentStatus(PaymentStatus.FAILED);
+            paymentRepository.save(payment);
+
+            throw new RuntimeException("Invalid payment signature");
         }
 
-        if (!payment.getRazorpayOrderId().equals(requestDto.getRazorpayOrderId())) {
+        payment.setRazorpayPaymentId(requestDto.getRazorpayPaymentId());
+        payment.setPaymentStatus(PaymentStatus.SUCCESS);
 
-            throw new IllegalArgumentException(
-                    "Invalid Razorpay order id");
-
-        }
-
-        payment.setRazorpayPaymentId(
-                requestDto.getRazorpayPaymentId());
-
-        payment.setPaymentStatus(
-                PaymentStatus.SUCCESS);
-
-        Payment updated =
-                paymentRepository.save(payment);
-
-        return convertToResponse(updated);
-
+        return convertToResponse(paymentRepository.save(payment));
     }
 
     @Override
@@ -202,6 +206,11 @@ public class PaymentServiceImpl implements PaymentService {
         return booking.getPartner() != null && AuthUtils.isSelf(booking.getPartner().getUserId());
     }
 
+    @Override
+    public String getRazorpayKeyId() {
+        return razorpayKeyId;
+    }
+
     private PaymentResponseDto convertToResponse(Payment payment) {
         return PaymentResponseDto.builder()
                 .paymentId(payment.getPaymentId())
@@ -211,5 +220,27 @@ public class PaymentServiceImpl implements PaymentService {
                 .bookingId(payment.getBooking().getBookingId())
                 .razorpayOrderId(payment.getRazorpayOrderId())
                 .build();
+    }
+    private String generateSignature(String orderId, String paymentId) {
+        try {
+            String payload = orderId + "|" + paymentId;
+
+            javax.crypto.Mac sha256_HMAC = javax.crypto.Mac.getInstance("HmacSHA256");
+
+            javax.crypto.spec.SecretKeySpec secret_key =
+                    new javax.crypto.spec.SecretKeySpec(
+                            razorpayKeySecret.getBytes(),
+                            "HmacSHA256"
+                    );
+
+            sha256_HMAC.init(secret_key);
+
+            byte[] hash = sha256_HMAC.doFinal(payload.getBytes());
+
+            return org.apache.commons.codec.binary.Hex.encodeHexString(hash);
+
+        } catch (Exception e) {
+            throw new RuntimeException("Signature generation failed", e);
+        }
     }
 }

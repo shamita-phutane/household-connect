@@ -289,7 +289,12 @@ public class BookingServiceImpl implements BookingService {
                                 booking.getService().getServiceId())
 
                         .serviceName(
-                                booking.getService().getSvcName());
+                                booking.getService().getSvcName())
+
+                        .paymentStatus(
+                                booking.getPayment() != null
+                                        ? booking.getPayment().getPaymentStatus()
+                                        : null);
 
         if (booking.getPartner() != null) {
 

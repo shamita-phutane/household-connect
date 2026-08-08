@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 
 import com.backend.common.enums.BookingStatus;
+import com.backend.common.enums.PaymentStatus;
 
 import lombok.*;
 
@@ -41,5 +42,11 @@ public class BookingResponseDto {
     private Long serviceId;
 
     private String serviceName;
+
+    // Null when no payment has been started for this booking yet.
+    // BookingStatus alone can't tell a customer whether they still owe
+    // payment (booking just created, no Payment row) or paid and are
+    // simply waiting on a partner - both look like status=PENDING.
+    private PaymentStatus paymentStatus;
 
 }

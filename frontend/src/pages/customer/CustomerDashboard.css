@@ -150,7 +150,7 @@
 
     display:grid;
 
-    grid-template-columns:repeat(4,1fr);
+    grid-template-columns:repeat(3,1fr);
 
     gap:24px;
 
@@ -214,13 +214,25 @@
 
     display:grid;
 
-    grid-template-columns:2fr 1fr auto;
+    grid-template-columns:2fr 1fr 1fr auto;
 
     align-items:center;
+
+    gap:14px;
 
     padding:24px 30px;
 
     border-bottom:1px solid var(--border);
+
+    cursor:pointer;
+
+    transition:var(--transition);
+
+}
+
+.booking-row:hover{
+
+    background:var(--surface-secondary);
 
 }
 
@@ -233,6 +245,24 @@
 .booking-row strong{
 
     color:var(--accent-color);
+
+}
+
+.payment-tag{
+
+    width:max-content;
+
+    padding:6px 14px;
+
+    border-radius:999px;
+
+    background:var(--surface-secondary);
+
+    color:var(--text-secondary);
+
+    font-size:.82rem;
+
+    font-weight:600;
 
 }
 
@@ -257,6 +287,24 @@
     color:#3B82F6;
 
     font-weight:600;
+
+}
+
+.cancelled{
+
+    color:var(--danger-color);
+
+    font-weight:600;
+
+}
+
+.empty-state{
+
+    padding:50px 30px;
+
+    text-align:center;
+
+    color:var(--text-secondary);
 
 }
 
@@ -300,7 +348,7 @@
 
         grid-template-columns:1fr;
 
-        gap:10px;
+        gap:8px;
 
     }
 

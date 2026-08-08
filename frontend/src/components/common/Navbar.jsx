@@ -117,6 +117,12 @@ function Navbar() {
 
                         <>
 
+                            {user?.role === "CUSTOMER" && (
+                                <Link to="/my-bookings" onClick={closeMenu}>
+                                    My Bookings
+                                </Link>
+                            )}
+
                             <span className="welcome-text">
 
                                 Hi, {user.name}

@@ -15,6 +15,7 @@ import CustomerDashboard from "../pages/customer/CustomerDashboard";
 import BookService from "../pages/customer/BookService";
 import MyBookings from "../pages/customer/MyBookings";
 import Payments from "../pages/customer/Payments";
+import BookingConfirmation from "../pages/customer/BookingConfirmation";
 
 import PartnerDashboard from "../pages/partner/PartnerDashboard";
 import AdminDashboard from "../pages/admin/AdminDashboard";
@@ -86,7 +87,25 @@ function AppRoutes() {
                 />
 
                 <Route
-                    path="/customer/payments"
+                    path="/my-bookings"
+                    element={
+                        <ProtectedRoute allowedRoles={["CUSTOMER"]}>
+                            <MyBookings />
+                        </ProtectedRoute>
+                    }
+                />
+
+                <Route
+                    path="/customer/bookings/:bookingId"
+                    element={
+                        <ProtectedRoute allowedRoles={["CUSTOMER"]}>
+                            <BookingConfirmation />
+                        </ProtectedRoute>
+                    }
+                />
+
+                <Route
+                    path="/customer/payments/:bookingId"
                     element={
                         <ProtectedRoute allowedRoles={["CUSTOMER"]}>
                             <Payments />

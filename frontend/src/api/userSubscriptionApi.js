@@ -4,7 +4,7 @@ export async function purchaseSubscription(data) {
 
     const response = await api.post(
 
-        "/api/user-subscriptions",
+        "/user-subscriptions",
 
         data
 
@@ -18,7 +18,7 @@ export async function getSubscriptionsByUser(userId) {
 
     const response = await api.get(
 
-        `/api/user-subscriptions/user/${userId}`
+        `/user-subscriptions/user/${userId}`
 
     );
 
@@ -30,7 +30,7 @@ export async function getSubscription(id) {
 
     const response = await api.get(
 
-        `/api/user-subscriptions/${id}`
+        `/user-subscriptions/${id}`
 
     );
 
