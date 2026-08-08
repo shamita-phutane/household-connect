@@ -122,6 +122,18 @@ function Navbar() {
                                     My Bookings
                                 </Link>
                             )}
+                            
+                            {user?.role === "PARTNER" && (
+                                <Link to="/partner/dashboard" onClick={closeMenu}>
+                                    Partner Dashboard
+                                </Link>
+                            )}
+
+                            {user?.role === "ADMIN" && (
+                                <Link to="/admin/dashboard" onClick={closeMenu}>
+                                    Admin Dashboard
+                                </Link>
+                            )}
 
                             <span className="welcome-text">
 

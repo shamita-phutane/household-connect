@@ -18,6 +18,7 @@ import Payments from "../pages/customer/Payments";
 import BookingConfirmation from "../pages/customer/BookingConfirmation";
 
 import PartnerDashboard from "../pages/partner/PartnerDashboard";
+import PartnerBookings from "../pages/partner/PartnerBookings";
 import AdminDashboard from "../pages/admin/AdminDashboard";
 
 function AppRoutes() {
@@ -124,6 +125,15 @@ function AppRoutes() {
                     element={
                         <ProtectedRoute allowedRoles={["PARTNER"]}>
                             <PartnerDashboard />
+                        </ProtectedRoute>
+                    }
+                />
+
+                <Route
+                    path="/partner/bookings"
+                    element={
+                        <ProtectedRoute allowedRoles={["PARTNER"]}>
+                            <PartnerBookings />
                         </ProtectedRoute>
                     }
                 />

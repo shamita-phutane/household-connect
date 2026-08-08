@@ -40,18 +40,20 @@ function Login() {
 
             login(response);
 
-            switch (response.role) {
+            const userRole = response.role;
 
-                case "ADMIN":
-                    navigate("/admin/dashboard");
-                    break;
+            if (userRole === "PARTNER") {
 
-                case "PARTNER":
-                    navigate("/partner/dashboard");
-                    break;
+                navigate("/partner/dashboard");
 
-                default:
-                    navigate("/my-bookings");
+            } else if (userRole === "ADMIN") {
+
+                navigate("/admin/dashboard");
+
+            } else {
+
+                navigate("/my-bookings");
+
             }
 
         } catch (error) {

@@ -16,7 +16,7 @@ function ServiceCard({ service }) {
         <div className="service-card">
 
             <img
-                src={service.imageUrl}
+                src={`http://localhost:8080${service.imageUrl}`}
                 alt={service.svcName}
                 className="service-image"
             />

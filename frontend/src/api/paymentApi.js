@@ -40,6 +40,11 @@ export async function getPaymentByBooking(bookingId) {
 
 }
 
+export async function getAllPayments() {
+    const response = await api.get("/payments");
+    return response.data;
+}
+
 export async function getRazorpayKey() {
 
     const response = await api.get(
