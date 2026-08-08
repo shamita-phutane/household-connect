@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { login as loginUser } from "../../services/authService";
 import { useAuth } from "../../context/AuthContext";
+import "./Login.css";
 
 function Login() {
     const navigate = useNavigate();
@@ -50,7 +51,7 @@ function Login() {
                     break;
 
                 default:
-                    navigate("/customer/dashboard");
+                    navigate("/my-bookings");
             }
 
         } catch (error) {
@@ -70,67 +71,67 @@ function Login() {
 
     return (
 
-        <div
-            style={{
-                maxWidth: "400px",
-                margin: "80px auto"
-            }}
-        >
+        <div className="auth-page">
 
-            <h1>Login</h1>
+            <div className="auth-card">
 
-            <form onSubmit={handleSubmit}>
+                <h1>Login</h1>
 
-                <div>
+                <p className="auth-subtitle">
+                    Welcome back. Enter your details to continue.
+                </p>
 
-                    <label>Email</label>
+                <form onSubmit={handleSubmit}>
 
-                    <input
-                        type="email"
-                        name="email"
-                        value={formData.email}
-                        onChange={handleChange}
-                        required
-                    />
+                    <div className="form-field">
 
-                </div>
+                        <label>Email</label>
 
-                <br />
+                        <input
+                            type="email"
+                            name="email"
+                            value={formData.email}
+                            onChange={handleChange}
+                            required
+                        />
 
-                <div>
+                    </div>
 
-                    <label>Password</label>
+                    <div className="form-field">
 
-                    <input
-                        type="password"
-                        name="password"
-                        value={formData.password}
-                        onChange={handleChange}
-                        required
-                    />
+                        <label>Password</label>
 
-                </div>
+                        <input
+                            type="password"
+                            name="password"
+                            value={formData.password}
+                            onChange={handleChange}
+                            required
+                        />
 
-                <br />
+                    </div>
 
-                {error &&
+                    {error &&
 
-                    <p style={{ color: "red" }}>
-                        {error}
-                    </p>
+                        <p className="auth-error">
+                            {error}
+                        </p>
 
-                }
+                    }
 
-                <button
-                    type="submit"
-                    disabled={loading}
-                >
+                    <button
+                        type="submit"
+                        disabled={loading}
+                        className="auth-submit"
+                    >
 
-                    {loading ? "Logging in..." : "Login"}
+                        {loading ? "Logging in..." : "Login"}
 
-                </button>
+                    </button>
 
-            </form>
+                </form>
+
+            </div>
 
         </div>
 

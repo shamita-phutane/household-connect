@@ -72,9 +72,16 @@ public class GlobalExceptionHandler {
         for (FieldError error : ex.getBindingResult().getFieldErrors()) {
             fieldErrors.put(error.getField(), error.getDefaultMessage());
         }
+        // Frontend forms (Login/Register) only render error.response.data.message,
+        // not the field-level "errors" map - without this, validation failures
+        // (bad phone format, weak password, etc.) fail silently in the UI.
+        String firstMessage = fieldErrors.values().stream()
+                .findFirst()
+                .orElse("Validation failed");
         Map<String, Object> body = new HashMap<>();
         body.put("timestamp", LocalDateTime.now());
         body.put("status", HttpStatus.BAD_REQUEST.value());
+        body.put("message", firstMessage);
         body.put("errors", fieldErrors);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
     }

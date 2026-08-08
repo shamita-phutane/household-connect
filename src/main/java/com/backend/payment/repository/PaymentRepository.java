@@ -11,6 +11,8 @@ import com.backend.payment.entity.Payment;
 public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
     Optional<Payment> findByBooking_BookingId(Long bookingId);
+    Optional<Payment> findByRazorpayOrderId(String razorpayOrderId);
 
     boolean existsByBooking_BookingId(Long bookingId);
 }
+

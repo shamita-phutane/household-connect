@@ -1,0 +1,355 @@
+.book-service{
+
+    padding:70px 0 100px;
+
+    min-height:100vh;
+
+}
+
+.book-service h1{
+
+    font-family:"Fraunces",serif;
+
+    font-size:3rem;
+
+    margin-bottom:12px;
+
+    color:var(--text-primary);
+
+}
+
+.book-service-subtitle{
+
+    color:var(--text-secondary);
+
+    max-width:600px;
+
+    line-height:1.8;
+
+    margin-bottom:44px;
+
+}
+
+.book-service-layout{
+
+    display:grid;
+
+    grid-template-columns:1fr 380px;
+
+    gap:32px;
+
+    align-items:start;
+
+}
+
+.booking-form{
+
+    background:var(--surface);
+
+    border:1px solid var(--border);
+
+    border-radius:24px;
+
+    padding:40px;
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:22px;
+
+    box-shadow:var(--box-shadow);
+
+}
+
+.form-row{
+
+    display:grid;
+
+    grid-template-columns:1fr 1fr;
+
+    gap:20px;
+
+}
+
+.form-field{
+
+    display:flex;
+
+    flex-direction:column;
+
+}
+
+.booking-form label{
+
+    font-weight:600;
+
+    color:var(--text-secondary);
+
+    margin-bottom:8px;
+
+    font-size:.9rem;
+
+}
+
+.booking-form input,
+
+.booking-form select,
+
+.booking-form textarea{
+
+    width:100%;
+
+    padding:16px;
+
+    border:1px solid var(--border);
+
+    border-radius:12px;
+
+    background:var(--surface-secondary);
+
+    color:var(--text-primary);
+
+    font-size:15px;
+
+    outline:none;
+
+    transition:var(--transition);
+
+    font-family:inherit;
+
+}
+
+.booking-form input:focus,
+
+.booking-form select:focus,
+
+.booking-form textarea:focus{
+
+    border-color:var(--accent-color);
+
+}
+
+.booking-form textarea{
+
+    resize:vertical;
+
+    min-height:120px;
+
+}
+
+.field-error{
+
+    margin-top:8px;
+
+    color:var(--danger-color);
+
+    font-size:.85rem;
+
+}
+
+.form-error{
+
+    background:rgba(212,119,110,.1);
+
+    border:1px solid rgba(212,119,110,.3);
+
+    color:var(--danger-color);
+
+    padding:12px 16px;
+
+    border-radius:10px;
+
+    font-size:.9rem;
+
+}
+
+.booking-form button{
+
+    margin-top:10px;
+
+    padding:16px;
+
+    border:none;
+
+    border-radius:12px;
+
+    background:var(--primary-color);
+
+    color:#12151d;
+
+    font-size:16px;
+
+    font-weight:700;
+
+    cursor:pointer;
+
+    transition:var(--transition);
+
+}
+
+.booking-form button:hover:not(:disabled){
+
+    background:var(--primary-hover);
+
+    transform:translateY(-2px);
+
+}
+
+.booking-form button:disabled{
+
+    opacity:.65;
+
+    cursor:not-allowed;
+
+}
+
+.booking-summary{
+
+    position:sticky;
+
+    top:110px;
+
+    background:var(--surface);
+
+    border:1px solid var(--border);
+
+    border-radius:24px;
+
+    padding:32px;
+
+    box-shadow:var(--box-shadow-sm);
+
+}
+
+.booking-summary h3{
+
+    font-family:"Fraunces",serif;
+
+    font-size:1.3rem;
+
+    margin-bottom:20px;
+
+    color:var(--text-primary);
+
+}
+
+.summary-category{
+
+    display:inline-block;
+
+    background:rgba(198,161,91,.12);
+
+    color:var(--accent-color);
+
+    padding:6px 14px;
+
+    border-radius:999px;
+
+    font-size:12px;
+
+    font-weight:600;
+
+    margin-bottom:16px;
+
+}
+
+.booking-summary h4{
+
+    font-size:1.2rem;
+
+    color:var(--text-primary);
+
+    margin-bottom:10px;
+
+}
+
+.booking-summary p{
+
+    color:var(--text-secondary);
+
+    line-height:1.7;
+
+    font-size:.92rem;
+
+}
+
+.summary-price{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    margin:20px 0;
+
+    padding-top:20px;
+
+    border-top:1px solid var(--border);
+
+}
+
+.summary-price strong{
+
+    color:var(--accent-color);
+
+    font-size:1.3rem;
+
+}
+
+.summary-note{
+
+    font-size:.82rem;
+
+    color:var(--text-secondary);
+
+    opacity:.85;
+
+}
+
+.summary-empty{
+
+    color:var(--text-secondary);
+
+}
+
+@media(max-width:900px){
+
+    .book-service-layout{
+
+        grid-template-columns:1fr;
+
+    }
+
+    .booking-summary{
+
+        position:static;
+
+        order:-1;
+
+    }
+
+}
+
+@media(max-width:768px){
+
+    .booking-form{
+
+        padding:24px;
+
+    }
+
+    .book-service h1{
+
+        font-size:2.2rem;
+
+    }
+
+    .form-row{
+
+        grid-template-columns:1fr;
+
+    }
+
+}
