@@ -125,7 +125,8 @@ public class SecurityConfig {
                                 "/api/auth/**",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
-                                "/actuator/**"
+                                "/actuator/**",
+                                "/images/**"
                         ).permitAll()
 
                         .requestMatchers(HttpMethod.POST, "/api/users")
@@ -134,12 +135,12 @@ public class SecurityConfig {
                         .requestMatchers(
                                 HttpMethod.GET,
                                 "/api/services/**",
-                                "/api/subscription-plans/**"
+                                "/api/subscriptions/**"
                         ).permitAll()
 
                         .requestMatchers(
                                 "/api/services/**",
-                                "/api/subscription-plans/**"
+                                "/api/subscriptions/**"
                         ).hasRole("ADMIN")
 
                         .requestMatchers(HttpMethod.DELETE, "/api/bookings/**")

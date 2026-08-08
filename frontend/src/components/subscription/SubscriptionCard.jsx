@@ -4,11 +4,11 @@ function SubscriptionCard({ plan }) {
 
     let badge = "";
 
-    if (plan.planName === "Silver Plan") {
+    if (plan.planName === "Basic") {
         badge = "Starter";
-    } else if (plan.planName === "Gold Plan") {
+    } else if (plan.planName === "Pro") {
         badge = "Most Popular";
-    } else if (plan.planName === "Platinum Plan") {
+    } else if (plan.planName === "Elite") {
         badge = "Best Value";
     }
 

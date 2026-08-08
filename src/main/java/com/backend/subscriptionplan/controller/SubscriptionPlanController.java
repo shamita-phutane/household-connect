@@ -14,7 +14,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/subscription-plans")
+@RequestMapping("/api/subscriptions")
 @RequiredArgsConstructor
 public class SubscriptionPlanController {
 

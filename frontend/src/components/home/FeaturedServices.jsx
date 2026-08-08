@@ -20,6 +20,7 @@ function FeaturedServices() {
 
                 const data = await getAllServices();
 
+                console.log(data);
                 setServices(data.slice(0, 6));
 
             } catch (err) {

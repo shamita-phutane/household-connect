@@ -10,6 +10,16 @@ export async function getCustomerBookings(customerId) {
 
 }
 
+export async function getPartnerBookings(partnerId) {
+    const response = await api.get(`/bookings/partner/${partnerId}`);
+    return response.data;
+}
+
+export async function getAllBookings() {
+    const response = await api.get("/bookings");
+    return response.data;
+}
+
 export async function getBookingById(id) {
 
     const response = await api.get(

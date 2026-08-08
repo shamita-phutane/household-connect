@@ -97,25 +97,39 @@ public class PaymentServiceImpl implements PaymentService {
     public PaymentResponseDto verifyPayment(
             PaymentVerificationRequestDto requestDto) {
 
+        System.out.println("VERIFY_PAYMENT_DEBUG: Received payload - OrderId: " + requestDto.getRazorpayOrderId() + 
+                ", PaymentId: " + requestDto.getRazorpayPaymentId() + 
+                ", Signature: " + requestDto.getRazorpaySignature());
+
         Payment payment = paymentRepository
                 .findByRazorpayOrderId(requestDto.getRazorpayOrderId())
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Payment not found"));
+                .orElseThrow(() -> {
+                    System.out.println("VERIFY_PAYMENT_DEBUG: Failure - Payment not found for OrderId: " + requestDto.getRazorpayOrderId());
+                    return new ResourceNotFoundException("Payment not found");
+                });
 
-        // ✅ Signature verification
-        String generatedSignature = generateSignature(
-                requestDto.getRazorpayOrderId(),
-                requestDto.getRazorpayPaymentId()
-        );
+        try {
+            JSONObject options = new JSONObject();
+            options.put("razorpay_order_id", requestDto.getRazorpayOrderId());
+            options.put("razorpay_payment_id", requestDto.getRazorpayPaymentId());
+            options.put("razorpay_signature", requestDto.getRazorpaySignature());
 
-        if (!generatedSignature.equals(requestDto.getRazorpaySignature())) {
+            boolean isValid = com.razorpay.Utils.verifyPaymentSignature(options, razorpayKeySecret);
 
+            if (!isValid) {
+                System.out.println("VERIFY_PAYMENT_DEBUG: Failure - Signature mismatch. Received: " + requestDto.getRazorpaySignature());
+                payment.setPaymentStatus(PaymentStatus.FAILED);
+                paymentRepository.save(payment);
+                throw new RuntimeException("Invalid payment signature");
+            }
+        } catch (RazorpayException e) {
+            System.out.println("VERIFY_PAYMENT_DEBUG: Failure - Exception during signature verification: " + e.getMessage());
             payment.setPaymentStatus(PaymentStatus.FAILED);
             paymentRepository.save(payment);
-
-            throw new RuntimeException("Invalid payment signature");
+            throw new RuntimeException("Error verifying signature", e);
         }
 
+        System.out.println("VERIFY_PAYMENT_DEBUG: Success - Payment verified successfully!");
         payment.setRazorpayPaymentId(requestDto.getRazorpayPaymentId());
         payment.setPaymentStatus(PaymentStatus.SUCCESS);
 

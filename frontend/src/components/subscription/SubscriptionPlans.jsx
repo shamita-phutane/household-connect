@@ -21,11 +21,12 @@ function SubscriptionPlans() {
                 const data = await getAllPlans();
 
                 const filteredPlans = data.filter(plan =>
-                    plan.planName === "Silver Plan" ||
-                    plan.planName === "Gold Plan" ||
-                    plan.planName === "Platinum Plan"
+                    plan.planName === "Basic" ||
+                    plan.planName === "Pro" ||
+                    plan.planName === "Elite"
                 );
 
+                console.log(filteredPlans);
                 setPlans(filteredPlans);
 
             } catch (error) {
