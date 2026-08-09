@@ -40,8 +40,13 @@ function Navbar() {
                 <Link
                     to="/"
                     className="logo"
+                    style={{ display: "flex", alignItems: "center" }}
                 >
-                    🏠 Household Connect
+                    <img 
+                        src="/logo-new.png" 
+                        alt="Household Connect" 
+                        style={{ height: "52px", width: "auto", objectFit: "contain", transform: "scale(1.1)" }} 
+                    />
                 </Link>
 
                 <button
@@ -71,17 +76,17 @@ function Navbar() {
                         Home
                     </NavLink>
 
-                    <a href="#services" onClick={closeMenu}>
+                    <Link to="/services" onClick={closeMenu}>
                         Services
-                    </a>
+                    </Link>
 
-                    <a href="#plans" onClick={closeMenu}>
+                    <Link to="/plans" onClick={closeMenu}>
                         Plans
-                    </a>
+                    </Link>
 
-                    <a href="#about" onClick={closeMenu}>
+                    <Link to="/about" onClick={closeMenu}>
                         About
-                    </a>
+                    </Link>
 
                     {
 

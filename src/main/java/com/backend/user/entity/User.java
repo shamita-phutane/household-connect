@@ -67,4 +67,12 @@ private Boolean verified;
 private List<Booking> customerBookings;
 @OneToMany(mappedBy = "partner")
 private List<Booking> assignedBookings;
+
+@ManyToMany
+@JoinTable(
+    name = "partner_services",
+    joinColumns = @JoinColumn(name = "partner_id"),
+    inverseJoinColumns = @JoinColumn(name = "service_id")
+)
+private List<com.backend.services.entity.Services> services;
 }

@@ -19,7 +19,7 @@ import ReviewsOverview from "./components/ReviewsOverview";
 
 export default function AdminDashboard() {
     const { user } = useAuth();
-    const [activeTab, setActiveTab] = useState("OVERVIEW");
+    const [activeTab, setActiveTab] = useState("overview");
     
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
@@ -70,6 +70,10 @@ export default function AdminDashboard() {
         const { getAllReviews } = await import("../../api/reviewApi");
         setReviews(await getAllReviews());
     }
+    
+    async function refreshBookings() {
+        setBookings(await getAllBookings());
+    }
 
     if (loading) {
         return <div className="customer-dashboard"><div className="container"><h2>Loading Admin Dashboard...</h2></div></div>;
@@ -80,13 +84,13 @@ export default function AdminDashboard() {
     }
 
     const tabs = [
-        { id: "OVERVIEW", label: "Overview" },
-        { id: "USERS", label: "Users" },
-        { id: "PARTNERS", label: "Partners" },
-        { id: "BOOKINGS", label: "Bookings" },
-        { id: "SERVICES", label: "Services" },
-        { id: "PAYMENTS", label: "Payments" },
-        { id: "REVIEWS", label: "Reviews" },
+        { id: "overview", label: "Overview" },
+        { id: "users", label: "Users" },
+        { id: "partners", label: "Partners" },
+        { id: "bookings", label: "Bookings" },
+        { id: "services", label: "Services" },
+        { id: "payments", label: "Payments" },
+        { id: "reviews", label: "Reviews" },
     ];
 
     return (
@@ -118,13 +122,13 @@ export default function AdminDashboard() {
                     ))}
                 </div>
 
-                {activeTab === "OVERVIEW" && <AdminOverview users={users} bookings={bookings} payments={payments} />}
-                {activeTab === "USERS" && <UserManagement users={users} refreshUsers={refreshUsers} />}
-                {activeTab === "PARTNERS" && <PartnerManagement users={users} />}
-                {activeTab === "BOOKINGS" && <BookingsOverview bookings={bookings} />}
-                {activeTab === "SERVICES" && <ServicesManagement services={services} refreshServices={refreshServices} />}
-                {activeTab === "PAYMENTS" && <PaymentsOverview payments={payments} />}
-                {activeTab === "REVIEWS" && <ReviewsOverview reviews={reviews} bookings={bookings} refreshReviews={refreshReviews} />}
+                {activeTab === "overview" && <AdminOverview users={users} bookings={bookings} payments={payments} services={services} refreshBookings={refreshBookings} />}
+                {activeTab === "users" && <UserManagement users={users} refreshUsers={refreshUsers} />}
+                {activeTab === "partners" && <PartnerManagement users={users} />}
+                {activeTab === "bookings" && <BookingsOverview bookings={bookings} refreshBookings={refreshBookings} />}
+                {activeTab === "services" && <ServicesManagement services={services} refreshServices={refreshServices} />}
+                {activeTab === "payments" && <PaymentsOverview payments={payments} />}
+                {activeTab === "reviews" && <ReviewsOverview reviews={reviews} bookings={bookings} refreshReviews={refreshReviews} />}
                 
             </div>
         </div>

@@ -17,16 +17,37 @@ import com.backend.usersubscription.dto.UserSubscriptionRequestDto;
 import com.backend.usersubscription.dto.UserSubscriptionResponseDto;
 import com.backend.usersubscription.entity.UserSubscription;
 import com.backend.usersubscription.repository.UserSubscriptionRepository;
+import com.backend.payment.dto.PaymentVerificationRequestDto;
+import com.razorpay.Order;
+import com.razorpay.RazorpayClient;
+import com.razorpay.RazorpayException;
+import com.razorpay.Utils;
+import org.json.JSONObject;
+import org.springframework.beans.factory.annotation.Value;
 
 import lombok.RequiredArgsConstructor;
 
 @Service
-@RequiredArgsConstructor
 public class UserSubscriptionServiceImpl implements UserSubscriptionService {
 
     private final UserSubscriptionRepository userSubscriptionRepository;
     private final UserRepository userRepository;
     private final SubscriptionPlanRepository subscriptionPlanRepository;
+    private final RazorpayClient razorpayClient;
+    private final String razorpayKeySecret;
+
+    public UserSubscriptionServiceImpl(
+            UserSubscriptionRepository userSubscriptionRepository,
+            UserRepository userRepository,
+            SubscriptionPlanRepository subscriptionPlanRepository,
+            RazorpayClient razorpayClient,
+            @Value("${razorpay.key.secret}") String razorpayKeySecret) {
+        this.userSubscriptionRepository = userSubscriptionRepository;
+        this.userRepository = userRepository;
+        this.subscriptionPlanRepository = subscriptionPlanRepository;
+        this.razorpayClient = razorpayClient;
+        this.razorpayKeySecret = razorpayKeySecret;
+    }
 
     @Override
     public UserSubscriptionResponseDto purchaseSubscription(UserSubscriptionRequestDto requestDto) {
@@ -47,7 +68,52 @@ public class UserSubscriptionServiceImpl implements UserSubscriptionService {
         subscription.setPlan(plan);
         subscription.setStartDate(LocalDate.now());
         subscription.setEndDate(LocalDate.now().plusMonths(1));
+        subscription.setStatus("PENDING");
+        
+        try {
+            JSONObject orderRequest = new JSONObject();
+            orderRequest.put("amount", (int) (plan.getPrice() * 100)); // amount in paise
+            orderRequest.put("currency", "INR");
+            orderRequest.put("receipt", "sub_" + System.currentTimeMillis());
+
+            Order razorpayOrder = razorpayClient.orders.create(orderRequest);
+            subscription.setRazorpayOrderId(razorpayOrder.get("id"));
+
+        } catch (RazorpayException e) {
+            throw new RuntimeException("Failed to create Razorpay order for subscription", e);
+        }
+
+        UserSubscription saved = userSubscriptionRepository.save(subscription);
+        return mapToResponseDto(saved);
+    }
+
+    @Override
+    @Transactional
+    public UserSubscriptionResponseDto verifySubscriptionPayment(PaymentVerificationRequestDto requestDto) {
+        
+    	try {
+    	    JSONObject options = new JSONObject();
+    	    options.put("razorpay_order_id", requestDto.getRazorpayOrderId());
+    	    options.put("razorpay_payment_id", requestDto.getRazorpayPaymentId());
+    	    options.put("razorpay_signature", requestDto.getRazorpaySignature());
+
+    	    boolean isValid = com.razorpay.Utils.verifyPaymentSignature(options, razorpayKeySecret);
+
+    	    if (!isValid) {
+    	        throw new com.backend.exception.InvalidRequestException("Payment signature verification failed");
+    	    }
+
+    	} catch (Exception e) {
+    	    throw new RuntimeException("Error verifying payment", e);
+    	}
+
+        UserSubscription subscription = userSubscriptionRepository.findByRazorpayOrderId(requestDto.getRazorpayOrderId())
+                .orElseThrow(() -> new ResourceNotFoundException("Subscription not found for order id: " + requestDto.getRazorpayOrderId()));
+
+        subscription.setRazorpayPaymentId(requestDto.getRazorpayPaymentId());
         subscription.setStatus("ACTIVE");
+        subscription.setStartDate(LocalDate.now());
+        subscription.setEndDate(LocalDate.now().plusMonths(1));
 
         UserSubscription saved = userSubscriptionRepository.save(subscription);
         return mapToResponseDto(saved);
@@ -105,5 +171,9 @@ public class UserSubscriptionServiceImpl implements UserSubscriptionService {
         dto.setStartDate(subscription.getStartDate());
         dto.setEndDate(subscription.getEndDate());
         dto.setStatus(subscription.getStatus());
+        dto.setRazorpayOrderId(subscription.getRazorpayOrderId());
+        dto.setPrice(subscription.getPlan().getPrice());
+        dto.setDiscount(subscription.getPlan().getDiscount());
+        dto.setDescription(subscription.getPlan().getDescription());
         return dto;
     }}

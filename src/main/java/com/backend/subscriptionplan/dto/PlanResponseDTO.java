@@ -14,4 +14,6 @@ public class PlanResponseDTO {
     private Long planId;
     private String planName;
     private Double discount;
+    private Double price;
+    private String description;
 }

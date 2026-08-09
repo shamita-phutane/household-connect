@@ -109,21 +109,21 @@ function Footer() {
 
                         <li>
 
-                            <a href="#about">
+                            <Link to="/about">
 
                                 About
 
-                            </a>
+                            </Link>
 
                         </li>
 
                         <li>
 
-                            <a href="#plans">
+                            <Link to="/plans">
 
                                 Membership
 
-                            </a>
+                            </Link>
 
                         </li>
 

@@ -1,5 +1,6 @@
 import "./Hero.css";
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { getAllServices } from "../../api/servicesApi";
 
 function Hero() {
@@ -62,7 +63,7 @@ function Hero() {
 
                     <h1>
 
-                        Home services
+                        Professional home services,
                         <br />
                         without the hassle.
 
@@ -75,6 +76,15 @@ function Hero() {
                         beauty services and much more.
 
                     </p>
+
+                    <div style={{ display: "flex", gap: "15px", marginTop: "10px", marginBottom: "30px", flexWrap: "wrap" }}>
+                        <Link to="/services" className="primary-btn" style={{ padding: "14px 28px", fontSize: "16px" }}>
+                            Book a Service
+                        </Link>
+                        <Link to="/plans" className="secondary-btn" style={{ padding: "14px 28px", fontSize: "16px" }}>
+                            Explore Plans
+                        </Link>
+                    </div>
 
                     <div className="hero-search">
 

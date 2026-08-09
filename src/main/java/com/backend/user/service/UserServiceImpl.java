@@ -22,11 +22,14 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final com.backend.services.repository.ServicesRepository servicesRepository;
 
     public UserServiceImpl(UserRepository userRepository,
-                           PasswordEncoder passwordEncoder) {
+                           PasswordEncoder passwordEncoder,
+                           com.backend.services.repository.ServicesRepository servicesRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.servicesRepository = servicesRepository;
     }
 
     @Override
@@ -60,6 +63,15 @@ public class UserServiceImpl implements UserService {
                 .avgRating(0.0)
                 .verified(true) // auto-verified on signup, no separate approval step
                 .build();
+                
+        if (requestDto.getRole() == Role.PARTNER) {
+            if (requestDto.getServiceId() == null) {
+                throw new InvalidRequestException("Partner must select a service to offer.");
+            }
+            com.backend.services.entity.Services service = servicesRepository.findById(requestDto.getServiceId())
+                .orElseThrow(() -> new ResourceNotFoundException("Selected service not found."));
+            user.setServices(java.util.List.of(service));
+        }
 
         User savedUser = userRepository.save(user);
 
@@ -142,6 +154,14 @@ public class UserServiceImpl implements UserService {
                                 "User not found with id: " + userId));
 
         userRepository.delete(user);
+    }
+
+    @Override
+    public List<UserResponseDto> getPartnersByService(Long serviceId) {
+        return userRepository.findByRoleAndServices_ServiceId(Role.PARTNER, serviceId)
+                .stream()
+                .map(this::convertToResponse)
+                .collect(Collectors.toList());
     }
 
     private UserResponseDto convertToResponse(User user) {

@@ -1,6 +1,5 @@
-import "./ServiceCard.css";
-
-function formatCategory(category) {
+import { Link } from "react-router-dom";
+import "./ServiceCard.css";function formatCategory(category) {
 
     return category
         .toLowerCase()
@@ -49,11 +48,9 @@ function ServiceCard({ service }) {
 
                     </span>
 
-                    <button>
-
+                    <Link to={`/customer/book-service/${service.serviceId}`} className="book-btn" style={{ background: "var(--accent-color)", color: "#000", padding: "8px 16px", borderRadius: "8px", textDecoration: "none", fontWeight: "bold" }}>
                         Book →
-
-                    </button>
+                    </Link>
 
                 </div>
 

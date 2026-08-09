@@ -395,21 +395,36 @@ function Payments() {
 
                         </div>
 
-                        {booking.discountAmount > 0 &&
-
-                            <div className="recap-row discount-row">
-
+                        {booking.discountAmount > 0 ? (
+                            <div className="recap-row discount-row" style={{ color: 'green', fontWeight: 'bold', fontSize: '0.95rem' }}>
                                 <span>
-
-                                    {activePlan ? `${activePlan.planName} Discount` : "Membership Discount"}
-
+                                    ✨ You saved ₹{booking.discountAmount} using your {activePlan ? activePlan.planName : "Subscription"} plan!
                                 </span>
-
-                                <strong>-₹{booking.discountAmount}</strong>
-
                             </div>
-
-                        }
+                        ) : (
+                            <div className="upsell-banner" style={{ background: 'var(--surface)', border: '1px solid var(--accent-color)', padding: '15px', borderRadius: '8px', margin: '15px 0', fontSize: '0.9rem' }}>
+                                <strong style={{ display: 'block', marginBottom: '12px', color: 'var(--accent-color)', fontSize: '1rem' }}>💡 Pro Tip: Subscribe to save!</strong>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', color: 'var(--text-secondary)' }}>
+                                    <span>Original Price:</span>
+                                    <span style={{ textDecoration: 'line-through' }}>₹{booking.originalAmount}</span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', color: 'var(--text-primary)', fontWeight: 'bold' }}>
+                                    <span>Discounted Price:</span>
+                                    <span>₹{Math.round(booking.originalAmount * 0.9)}</span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', color: 'var(--accent-color)', fontWeight: 'bold' }}>
+                                    <span>Potential Savings:</span>
+                                    <span>₹{Math.round(booking.originalAmount * 0.1)}</span>
+                                </div>
+                                <button 
+                                    onClick={() => navigate('/#plans')} 
+                                    className="pay-btn"
+                                    style={{ width: '100%', padding: '10px', fontSize: '0.9rem', background: 'var(--accent-color)', color: '#000' }}
+                                >
+                                    View Plans & Save
+                                </button>
+                            </div>
+                        )}
 
                         <div className="recap-row total-row">
 

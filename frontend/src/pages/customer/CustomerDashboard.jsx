@@ -16,26 +16,28 @@ import { getCustomerBookings } from "../../api/bookingApi";
 import { getSubscriptionsByUser } from "../../api/userSubscriptionApi";
 
 function statusClass(status) {
-
     switch (status) {
-
         case "COMPLETED":
             return "completed";
-
         case "PENDING":
             return "pending";
-
         case "ACCEPTED":
             return "accepted";
-
         case "CANCELLED":
             return "cancelled";
-
         default:
             return "";
-
     }
+}
 
+function bookingStatusLabel(status) {
+    switch (status) {
+        case "PENDING": return "Awaiting Confirmation";
+        case "ACCEPTED": return "Confirmed";
+        case "COMPLETED": return "Completed";
+        case "CANCELLED": return "Cancelled";
+        default: return status;
+    }
 }
 
 function CustomerDashboard() {
@@ -243,22 +245,25 @@ function CustomerDashboard() {
 
                     </div>
 
-                    <div className="dashboard-card">
-
-                        <FaCrown className="card-icon"/>
-
-                        <h3>
-
-                            Membership
-
-                        </h3>
-
-                        <span>
-
-                            {activePlan ? activePlan.planName : "None"}
-
-                        </span>
-
+                    <div className="dashboard-card" style={{gridColumn: activePlan ? "1 / -1" : "auto", display: 'flex', flexDirection: 'column', gap: '5px'}}>
+                        <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
+                            <FaCrown className="card-icon"/>
+                            <h3 style={{margin: 0}}>My Subscription</h3>
+                        </div>
+                        {activePlan ? (
+                            <div style={{marginTop: '10px', fontSize: '0.95rem'}}>
+                                <strong>{activePlan.planName} Plan</strong> - Active<br/>
+                                <span style={{color: 'var(--text-secondary)'}}>Discount: {activePlan.discount}% OFF</span><br/>
+                                <span style={{color: 'var(--text-secondary)'}}>Expires: {activePlan.endDate}</span><br/>
+                                <ul style={{ marginTop: '10px', paddingLeft: '20px' }}>
+                                    {activePlan.description && activePlan.description.split(',').map((perk, index) => (
+                                        <li key={index} style={{ color: 'var(--primary)' }}>{perk.trim()}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        ) : (
+                            <span style={{marginTop: '10px'}}>None</span>
+                        )}
                     </div>
 
                 </div>
@@ -341,9 +346,7 @@ function CustomerDashboard() {
                                         </span>
 
                                         <span className={statusClass(booking.status)}>
-
-                                            {booking.status}
-
+                                            {bookingStatusLabel(booking.status)}
                                         </span>
 
                                         <strong>

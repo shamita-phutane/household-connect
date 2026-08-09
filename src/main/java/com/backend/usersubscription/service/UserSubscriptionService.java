@@ -9,6 +9,8 @@ public interface UserSubscriptionService {
 
     UserSubscriptionResponseDto purchaseSubscription(UserSubscriptionRequestDto requestDto);
 
+    UserSubscriptionResponseDto verifySubscriptionPayment(com.backend.payment.dto.PaymentVerificationRequestDto requestDto);
+
     List<UserSubscriptionResponseDto> getAllSubscriptions();
 
     UserSubscriptionResponseDto getSubscriptionById(Long subId);

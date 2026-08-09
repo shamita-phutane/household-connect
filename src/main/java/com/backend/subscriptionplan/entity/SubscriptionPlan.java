@@ -28,4 +28,10 @@ public class SubscriptionPlan {
 
     @Column(nullable = false)
     private Double discount;
+
+    @Column(nullable = false)
+    private Double price = 0.0;
+
+    @Column(nullable = true, length = 1000)
+    private String description;
 }

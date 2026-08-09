@@ -17,9 +17,20 @@ function bookingStatusClass(status) {
     }
 }
 
+function bookingStatusLabel(status) {
+    switch (status) {
+        case "PENDING": return "Awaiting Confirmation";
+        case "ACCEPTED": return "Confirmed";
+        case "COMPLETED": return "Completed";
+        case "CANCELLED": return "Cancelled";
+        default: return status;
+    }
+}
+
 function paymentStatusLabel(paymentStatus) {
-    if (!paymentStatus) return "Not Paid";
-    if (paymentStatus === "SUCCESS") return "Paid";
+    if (!paymentStatus) return "Payment Pending";
+    if (paymentStatus === "SUCCESS") return "Payment Success";
+    if (paymentStatus === "FAILED") return "Payment Failed";
     return paymentStatus.charAt(0) + paymentStatus.slice(1).toLowerCase();
 }
 
@@ -129,7 +140,7 @@ function MyBookings() {
                                     </div>
                                     <div className="booking-badges">
                                         <span className={`badge ${bookingStatusClass(booking.status)}`}>
-                                            {booking.status}
+                                            {bookingStatusLabel(booking.status)}
                                         </span>
                                         <span className={`badge ${paymentStatusClass(booking.paymentStatus)}`}>
                                             {paymentStatusLabel(booking.paymentStatus)}
