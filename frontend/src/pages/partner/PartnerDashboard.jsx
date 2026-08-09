@@ -77,10 +77,10 @@ function PartnerDashboard() {
     const completedBookings = bookings.filter(b => b.status === "COMPLETED").length;
     const pendingBookings = bookings.filter(b => b.status === "PENDING" || b.status === "ACCEPTED").length;
     
-    // Earnings from SUCCESS payments
+    // Earnings from SUCCESS payments (Partner gets 80%)
     const totalEarnings = bookings
         .filter(b => b.paymentStatus === "SUCCESS")
-        .reduce((sum, b) => sum + (b.finalAmount || 0), 0);
+        .reduce((sum, b) => sum + (b.finalAmount || 0), 0) * 0.8;
 
     // Filter reviews to only those matching partner's bookings
     const partnerReviews = reviews.filter(r => bookings.some(b => b.bookingId === r.bookingId));
@@ -115,7 +115,7 @@ function PartnerDashboard() {
                     </div>
                     <div className="dashboard-card">
                         <FaPiggyBank className="card-icon"/>
-                        <h3>Total Earnings</h3>
+                        <h3>Earnings (80%)</h3>
                         <span>₹{totalEarnings.toFixed(0)}</span>
                     </div>
                 </div>

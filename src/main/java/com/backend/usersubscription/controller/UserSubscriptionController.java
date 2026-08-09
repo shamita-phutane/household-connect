@@ -25,6 +25,11 @@ public class UserSubscriptionController {
         return ResponseEntity.status(HttpStatus.CREATED).body(userSubscriptionService.purchaseSubscription(requestDto));
     }
 
+    @PostMapping("/verify")
+    public ResponseEntity<UserSubscriptionResponseDto> verifyPayment(@Valid @RequestBody com.backend.payment.dto.PaymentVerificationRequestDto requestDto) {
+        return ResponseEntity.ok(userSubscriptionService.verifySubscriptionPayment(requestDto));
+    }
+
     @GetMapping
     public ResponseEntity<List<UserSubscriptionResponseDto>> getAll() {
         return ResponseEntity.ok(userSubscriptionService.getAllSubscriptions());

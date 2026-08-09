@@ -1,15 +1,11 @@
 .hero{
-
-    padding:130px 0 150px;
-
+    padding:50px 0 100px;
+    margin-top: 0;
     background:
     radial-gradient(circle at top right,rgba(198,161,91,.08) 0%,transparent 40%),
     var(--background);
-
     overflow:hidden;
-
     position:relative;
-
 }
 
 .hero-container{

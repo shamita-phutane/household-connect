@@ -20,6 +20,15 @@ import com.backend.payment.dto.PaymentVerificationRequestDto;
 import com.backend.payment.entity.Payment;
 import com.backend.payment.repository.PaymentRepository;
 import com.backend.security.AuthUtils;
+import com.backend.usersubscription.entity.UserSubscription;
+import com.backend.usersubscription.repository.UserSubscriptionRepository;
+import com.razorpay.Order;
+import com.razorpay.RazorpayClient;
+import com.razorpay.RazorpayException;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import java.util.Base64;
+import java.time.LocalDate;
 import com.razorpay.Order;
 import com.razorpay.RazorpayClient;
 import com.razorpay.RazorpayException;
@@ -33,16 +42,19 @@ public class PaymentServiceImpl implements PaymentService {
     private final String razorpayKeySecret;
     private final PaymentRepository paymentRepository;
     private final BookingRepository bookingRepository;
+    private final UserSubscriptionRepository userSubscriptionRepository;
     private final RazorpayClient razorpayClient;
     private final String razorpayKeyId;
 
     public PaymentServiceImpl(PaymentRepository paymentRepository,
             BookingRepository bookingRepository,
+            UserSubscriptionRepository userSubscriptionRepository,
             RazorpayClient razorpayClient,
             @Value("${razorpay.key.id}") String razorpayKeyId,
             @Value("${razorpay.key.secret}") String razorpayKeySecret) {
         this.paymentRepository = paymentRepository;
         this.bookingRepository = bookingRepository;
+        this.userSubscriptionRepository = userSubscriptionRepository;
         this.razorpayClient = razorpayClient;
         this.razorpayKeyId = razorpayKeyId != null ? razorpayKeyId.trim() : null;
         this.razorpayKeySecret = razorpayKeySecret != null ? razorpayKeySecret.trim() : null;
@@ -132,6 +144,8 @@ public class PaymentServiceImpl implements PaymentService {
         System.out.println("VERIFY_PAYMENT_DEBUG: Success - Payment verified successfully!");
         payment.setRazorpayPaymentId(requestDto.getRazorpayPaymentId());
         payment.setPaymentStatus(PaymentStatus.SUCCESS);
+        
+
 
         return convertToResponse(paymentRepository.save(payment));
     }

@@ -1,6 +1,5 @@
 package com.backend.booking.service;
 
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -50,35 +49,36 @@ public class BookingServiceImpl implements BookingService {
     @Transactional
     public BookingResponseDto createBooking(BookingRequestDto requestDto) {
 
-        if (!AuthUtils.isAdmin() && !AuthUtils.isSelf(requestDto.getCustomerId())) {
-            throw new AccessDeniedException("You can only create bookings for your own account");
-        }
+        // ✅ ALWAYS take user from JWT (FINAL FIX)
+    	Long loggedInUserId = AuthUtils.currentUserId();
 
-        User customer = userRepository.findById(requestDto.getCustomerId())
+        User customer = userRepository.findById(loggedInUserId)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "Customer not found with id: " + requestDto.getCustomerId()));
+                        "User not found with id: " + loggedInUserId));
+
+        if (customer.getRole() != Role.CUSTOMER) {
+            throw new AccessDeniedException("Only customers can create bookings");
+        }
 
         Services service = servicesRepository.findById(requestDto.getServiceId())
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Service not found with id: " + requestDto.getServiceId()));
 
-        double finalAmount = service.getBasePrice();
+        double originalAmount = service.getBasePrice();
+        double finalAmount = originalAmount;
 
+        // ✅ Apply subscription discount (if exists)
         Optional<UserSubscription> subscription =
                 userSubscriptionRepository
                         .findFirstByUser_UserIdAndStatusAndEndDateGreaterThanEqual(
-                                customer.getUserId(),
+                                loggedInUserId,
                                 "ACTIVE",
-                                LocalDate.now());
+                                java.time.LocalDate.now());
 
         if (subscription.isPresent()) {
-
-            double discount = subscription.get()
-                    .getPlan()
-                    .getDiscount();
-
-            finalAmount = finalAmount -
-                    (finalAmount * discount / 100.0);
+            UserSubscription sub = subscription.get();
+            double discount = sub.getPlan().getDiscount();
+            finalAmount = finalAmount - (finalAmount * discount / 100.0);
         }
 
         Booking booking = Booking.builder()
@@ -178,6 +178,14 @@ public class BookingServiceImpl implements BookingService {
                     "User is not a PARTNER");
         }
 
+        boolean hasService = partner.getServices() != null && 
+                             partner.getServices().stream()
+                                    .anyMatch(s -> s.getServiceId().equals(booking.getService().getServiceId()));
+        
+        if (!hasService) {
+            throw new InvalidRequestException("Partner does not provide this service");
+        }
+
         booking.setPartner(partner);
 
         return convertToResponse(
@@ -262,51 +270,34 @@ public class BookingServiceImpl implements BookingService {
 
         BookingResponseDto.BookingResponseDtoBuilder builder =
                 BookingResponseDto.builder()
-
                         .bookingId(booking.getBookingId())
-
                         .date(booking.getDate())
-
                         .bookingTime(booking.getBookingTime())
-
                         .status(booking.getStatus())
-
                         .finalAmount(booking.getFinalAmount())
-
                         .originalAmount(originalAmount)
-
                         .discountAmount(discountAmount)
-
                         .serviceAddress(booking.getServiceAddress())
-
                         .customerId(
                                 booking.getCustomer().getUserId())
-
                         .customerName(
                                 booking.getCustomer().getName())
-
                         .serviceId(
                                 booking.getService().getServiceId())
-
                         .serviceName(
                                 booking.getService().getSvcName())
-
                         .paymentStatus(
                                 booking.getPayment() != null
                                         ? booking.getPayment().getPaymentStatus()
                                         : null);
 
         if (booking.getPartner() != null) {
-
             builder.partnerId(
                             booking.getPartner().getUserId())
-
                     .partnerName(
                             booking.getPartner().getName());
-
         }
 
         return builder.build();
-
     }
 }

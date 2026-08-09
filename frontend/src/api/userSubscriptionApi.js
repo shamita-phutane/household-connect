@@ -37,3 +37,8 @@ export async function getSubscription(id) {
     return response.data;
 
 }
+
+export async function verifySubscription(data) {
+    const response = await api.post("/user-subscriptions/verify", data);
+    return response.data;
+}

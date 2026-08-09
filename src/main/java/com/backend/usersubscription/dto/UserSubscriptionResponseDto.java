@@ -19,4 +19,8 @@ public class UserSubscriptionResponseDto {
     private LocalDate startDate;
     private LocalDate endDate;
     private String status;
+    private String razorpayOrderId;
+    private Double price;
+    private Double discount;
+    private String description;
 }

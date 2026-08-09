@@ -39,4 +39,10 @@ public class UserSubscription {
 
     @Column(nullable = false)
     private String status;
+
+    @Column(nullable = true)
+    private String razorpayOrderId;
+
+    @Column(nullable = true)
+    private String razorpayPaymentId;
 }

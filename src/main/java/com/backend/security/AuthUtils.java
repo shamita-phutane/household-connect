@@ -1,16 +1,14 @@
 package com.backend.security;
 
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import com.backend.common.enums.Role;
 import com.backend.user.entity.User;
 
 /**
- * Small helper for reading the currently authenticated user out of the
- * security context. Used across service classes to enforce "only the
- * owner of this record, or an admin, can do this" style checks that go
- * beyond what a simple @PreAuthorize/route role rule can express (e.g.
- * "only THIS booking's customer", not "any customer").
+ * Utility class to fetch the currently authenticated user
+ * from Spring Security context.
  */
 public final class AuthUtils {
 
@@ -18,14 +16,22 @@ public final class AuthUtils {
     }
 
     public static User currentUser() {
-        Object principal = SecurityContextHolder.getContext()
-                .getAuthentication()
-                .getPrincipal();
+
+        Authentication authentication = SecurityContextHolder
+                .getContext()
+                .getAuthentication();
+
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new IllegalStateException("No authenticated user found");
+        }
+
+        Object principal = authentication.getPrincipal();
 
         if (principal instanceof UserDetailsImpl userDetails) {
             return userDetails.getUser();
         }
-        throw new IllegalStateException("No authenticated user found in security context");
+
+        throw new IllegalStateException("Invalid authentication principal");
     }
 
     public static Long currentUserId() {

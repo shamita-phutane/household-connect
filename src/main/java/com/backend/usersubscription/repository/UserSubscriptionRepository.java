@@ -19,4 +19,6 @@ public interface UserSubscriptionRepository extends JpaRepository<UserSubscripti
             String status,
             LocalDate date
     );
+
+    Optional<UserSubscription> findByRazorpayOrderId(String razorpayOrderId);
 }

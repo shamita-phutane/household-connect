@@ -19,4 +19,5 @@ public interface UserService {
     // Delete user
     void deleteUser(Long userId);
 
+    List<UserResponseDto> getPartnersByService(Long serviceId);
 }

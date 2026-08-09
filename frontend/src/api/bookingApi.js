@@ -51,3 +51,8 @@ export async function createBooking(data) {
     return response.data;
 
 }
+
+export async function assignPartner(bookingId, partnerId) {
+    const response = await api.patch(`/bookings/${bookingId}/assign-partner/${partnerId}`);
+    return response.data;
+}

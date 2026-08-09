@@ -1,7 +1,7 @@
 import "./BookService.css";
 
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 import { useAuth } from "../../context/AuthContext";
 
@@ -31,31 +31,21 @@ function formatCategory(category) {
 function BookService() {
 
     const { user } = useAuth();
-
     const navigate = useNavigate();
+    const { serviceId: paramServiceId } = useParams();
 
     const [services, setServices] = useState([]);
-
     const [loading, setLoading] = useState(true);
-
     const [loadError, setLoadError] = useState("");
-
     const [submitting, setSubmitting] = useState(false);
-
     const [submitError, setSubmitError] = useState("");
-
     const [fieldErrors, setFieldErrors] = useState({});
 
     const [formData, setFormData] = useState({
-
-        serviceId: "",
-
+        serviceId: paramServiceId || "",
         date: "",
-
         bookingTime: "",
-
         serviceAddress: ""
-
     });
 
     const minDate = todayIsoDate();

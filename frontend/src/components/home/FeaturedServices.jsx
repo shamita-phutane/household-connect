@@ -6,7 +6,7 @@ import "./FeaturedServices.css";
 import { getAllServices } from "../../api/servicesApi";
 import ServiceCard from "../service/ServiceCard";
 
-function FeaturedServices() {
+function FeaturedServices({ showAll = false }) {
 
     const [services, setServices] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -21,7 +21,7 @@ function FeaturedServices() {
                 const data = await getAllServices();
 
                 console.log(data);
-                setServices(data.slice(0, 6));
+                setServices(showAll ? data : data.slice(0, 6));
 
             } catch (err) {
 
@@ -39,7 +39,7 @@ function FeaturedServices() {
 
         fetchServices();
 
-    }, []);
+    }, [showAll]);
 
     if (loading) {
 
@@ -51,7 +51,7 @@ function FeaturedServices() {
 
                     <h2 className="section-title">
 
-                        Popular Services
+                        {showAll ? "All Services" : "Popular Services"}
 
                     </h2>
 
@@ -75,7 +75,7 @@ function FeaturedServices() {
 
                     <h2 className="section-title">
 
-                        Popular Services
+                        {showAll ? "All Services" : "Popular Services"}
 
                     </h2>
 
@@ -104,7 +104,7 @@ function FeaturedServices() {
 
                         <h2 className="section-title">
 
-                            Popular Services
+                            {showAll ? "All Services" : "Popular Services"}
 
                         </h2>
 
@@ -116,14 +116,14 @@ function FeaturedServices() {
 
                     </div>
 
-                    <Link
-                        to="/services"
-                        className="view-all-btn"
-                    >
-
-                        View All →
-
-                    </Link>
+                    {!showAll && (
+                        <Link
+                            to="/services"
+                            className="view-all-btn"
+                        >
+                            View All →
+                        </Link>
+                    )}
 
                 </div>
 

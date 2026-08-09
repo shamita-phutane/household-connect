@@ -1,6 +1,6 @@
 import "./SubscriptionCard.css";
 
-function SubscriptionCard({ plan }) {
+function SubscriptionCard({ plan, onChoosePlan }) {
 
     let badge = "";
 
@@ -17,39 +17,29 @@ function SubscriptionCard({ plan }) {
         <div className="subscription-card">
 
             <span className="plan-badge">
-
                 {badge}
-
             </span>
 
             <h3>
-
                 {plan.planName}
-
             </h3>
 
             <div className="discount">
-
-                {plan.discount}% OFF
-
+                {plan.discount}% OFF Bookings
+            </div>
+            
+            <div className="price" style={{ margin: "10px 0", fontSize: "1.2rem", fontWeight: "bold" }}>
+                ₹{plan.price} / month
             </div>
 
             <ul>
-
-                <li>Priority Booking</li>
-
-                <li>Discount on Every Service</li>
-
-                <li>Verified Professionals</li>
-
-                <li>24×7 Customer Support</li>
-
+                {plan.description && plan.description.split(',').map((perk, index) => (
+                    <li key={index}>{perk.trim()}</li>
+                ))}
             </ul>
 
-            <button>
-
+            <button onClick={() => onChoosePlan(plan.planId)}>
                 Choose Plan
-
             </button>
 
         </div>

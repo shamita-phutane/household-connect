@@ -37,4 +37,7 @@ public class UserRequestDto {
 
 	    @NotNull(message = "Role is required")
 	    private Role role;
+        
+        private Long serviceId; // Required for partners
+        private Integer experienceYears; // Optional for partners
 }
