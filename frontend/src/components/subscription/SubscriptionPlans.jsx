@@ -33,7 +33,6 @@ function SubscriptionPlans() {
                     plan.planName === "Elite"
                 );
 
-                console.log(filteredPlans);
                 setPlans(filteredPlans);
 
             } catch (error) {

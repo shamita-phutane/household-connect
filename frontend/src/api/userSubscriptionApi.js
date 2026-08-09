@@ -26,6 +26,11 @@ export async function getSubscriptionsByUser(userId) {
 
 }
 
+export async function cancelSubscription(subId) {
+    const response = await api.patch(`/user-subscriptions/${subId}/cancel`);
+    return response.data;
+}
+
 export async function getSubscription(id) {
 
     const response = await api.get(

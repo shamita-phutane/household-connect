@@ -23,4 +23,6 @@ public class UserSubscriptionResponseDto {
     private Double price;
     private Double discount;
     private String description;
+    private Integer remainingUses;
+    private Integer maxUses;
 }

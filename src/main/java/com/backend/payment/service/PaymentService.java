@@ -10,29 +10,13 @@ import com.backend.payment.dto.PaymentVerificationRequestDto;
 
 public interface PaymentService {
 	
-    // Create Razorpay order
     PaymentResponseDto createPayment(PaymentRequestDto requestDto);
-
-    // Verify successful Razorpay payment
     PaymentResponseDto verifyPayment(PaymentVerificationRequestDto requestDto);
-
-    // Get payment by ID
     PaymentResponseDto getPaymentById(Long paymentId);
-
-    // Get payment for a booking
     PaymentResponseDto getPaymentByBooking(Long bookingId);
-
-    // Admin
     List<PaymentResponseDto> getAllPayments();
-
-    // Admin
     PaymentResponseDto updateStatus(Long paymentId, PaymentStatus status);
-
-    // Admin
     void deletePayment(Long paymentId);
-
-    // Publishable Razorpay key id, needed by Checkout.js on the frontend.
-    // The secret key never leaves the server.
     String getRazorpayKeyId();
 
 }

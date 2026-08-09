@@ -12,7 +12,8 @@ function statusClass(status) {
         case "COMPLETED": return "completed";
         case "PENDING": return "pending";
         case "ACCEPTED": return "accepted";
-        case "CANCELLED": return "cancelled";
+        case "CANCELLED":
+        case "REJECTED": return "cancelled";
         default: return "";
     }
 }
@@ -146,7 +147,11 @@ function PartnerDashboard() {
                                     {booking.status === "PENDING" && (
                                         <>
                                             <button className="pay-btn" onClick={() => handleStatusUpdate(booking.bookingId, "ACCEPTED")}>Accept</button>
-                                            <button className="cancel-btn" onClick={() => handleStatusUpdate(booking.bookingId, "CANCELLED")}>Reject</button>
+                                            <button className="cancel-btn" onClick={() => {
+                                                if (window.confirm("Reject this booking? The customer will receive a refund and their subscription usage will be restored if applicable.")) {
+                                                    handleStatusUpdate(booking.bookingId, "REJECTED");
+                                                }
+                                            }}>Reject</button>
                                         </>
                                     )}
                                     {booking.status === "ACCEPTED" && (

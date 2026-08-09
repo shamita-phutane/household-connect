@@ -49,6 +49,12 @@ public class ReviewServiceImpl implements ReviewService {
                             + " because its status is " + booking.getStatus() + ", not COMPLETED");
         }
 
+        if (booking.getPayment() == null || booking.getPayment().getPaymentStatus() != com.backend.common.enums.PaymentStatus.SUCCESS) {
+            throw new InvalidRequestException(
+                    "Cannot review booking with id " + requestDto.getBookingId()
+                            + " because payment has not been successfully completed.");
+        }
+
         if (reviewRepository.existsByBooking_BookingId(requestDto.getBookingId())) {
             throw new DuplicateResourceException(
                     "Review already exists for booking id: " + requestDto.getBookingId());

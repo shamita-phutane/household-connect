@@ -60,6 +60,13 @@ public class UserSubscriptionServiceImpl implements UserSubscriptionService {
         User user = userRepository.findById(requestDto.getUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + requestDto.getUserId()));
 
+        java.util.Optional<UserSubscription> existing = userSubscriptionRepository
+                .findFirstByUser_UserIdAndStatusAndEndDateGreaterThanEqual(
+                        requestDto.getUserId(), "ACTIVE", java.time.LocalDate.now());
+        if (existing.isPresent()) {
+            throw new com.backend.exception.InvalidRequestException("You already have an active subscription");
+        }
+
         SubscriptionPlan plan = subscriptionPlanRepository.findById(requestDto.getPlanId())
                 .orElseThrow(() -> new ResourceNotFoundException("Plan not found with id: " + requestDto.getPlanId()));
 
@@ -114,6 +121,14 @@ public class UserSubscriptionServiceImpl implements UserSubscriptionService {
         subscription.setStatus("ACTIVE");
         subscription.setStartDate(LocalDate.now());
         subscription.setEndDate(LocalDate.now().plusMonths(1));
+        
+        int max = 0;
+        if (subscription.getPlan().getPlanName().equalsIgnoreCase("Basic")) max = 2;
+        else if (subscription.getPlan().getPlanName().equalsIgnoreCase("Pro")) max = 5;
+        else if (subscription.getPlan().getPlanName().equalsIgnoreCase("Elite")) max = 9999;
+        
+        subscription.setMaxUses(max);
+        subscription.setRemainingUses(max);
 
         UserSubscription saved = userSubscriptionRepository.save(subscription);
         return mapToResponseDto(saved);
@@ -154,11 +169,27 @@ public class UserSubscriptionServiceImpl implements UserSubscriptionService {
             throw new AccessDeniedException("You can only view your own subscriptions");
         }
 
-        return userSubscriptionRepository.findAll()
+        return userSubscriptionRepository.findByUser_UserId(userId)
                 .stream()
-                .filter(s -> s.getUser().getUserId().equals(userId))
                 .map(this::mapToResponseDto)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public UserSubscriptionResponseDto cancelSubscription(Long subId) {
+        UserSubscription subscription = userSubscriptionRepository.findById(subId)
+                .orElseThrow(() -> new ResourceNotFoundException("Subscription not found with id: " + subId));
+
+        if (!AuthUtils.isAdmin() && !AuthUtils.isSelf(subscription.getUser().getUserId())) {
+            throw new AccessDeniedException("You can only cancel your own subscription");
+        }
+
+        subscription.setStatus("CANCELLED");
+        subscription.setRemainingUses(0);
+
+        UserSubscription saved = userSubscriptionRepository.save(subscription);
+        return mapToResponseDto(saved);
     }
 
     private UserSubscriptionResponseDto mapToResponseDto(UserSubscription subscription) {
@@ -175,5 +206,7 @@ public class UserSubscriptionServiceImpl implements UserSubscriptionService {
         dto.setPrice(subscription.getPlan().getPrice());
         dto.setDiscount(subscription.getPlan().getDiscount());
         dto.setDescription(subscription.getPlan().getDescription());
+        dto.setRemainingUses(subscription.getRemainingUses());
+        dto.setMaxUses(subscription.getMaxUses());
         return dto;
     }}

@@ -45,4 +45,10 @@ public class UserSubscription {
 
     @Column(nullable = true)
     private String razorpayPaymentId;
+
+    @Column(nullable = true)
+    private Integer maxUses;
+
+    @Column(nullable = true)
+    private Integer remainingUses;
 }

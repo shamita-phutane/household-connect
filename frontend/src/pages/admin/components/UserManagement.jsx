@@ -9,13 +9,14 @@ export default function UserManagement({ users, refreshUsers }) {
         return user.role === filter;
     });
 
-    async function handleDelete(userId) {
-        if (!window.confirm("Are you sure you want to deactivate this user?")) return;
+    async function handleDelete(userId, isVerified) {
+        const action = isVerified ? "deactivate" : "activate";
+        if (!window.confirm(`Are you sure you want to ${action} this user?`)) return;
         try {
             await deleteUser(userId);
             refreshUsers();
         } catch (err) {
-            alert("Failed to deactivate user.");
+            alert(`Failed to ${action} user.`);
             console.error(err);
         }
     }
@@ -51,12 +52,19 @@ export default function UserManagement({ users, refreshUsers }) {
                     <div className="empty-state">No users found.</div>
                 ) : (
                     filteredUsers.map(user => (
-                        <div key={user.userId} className="booking-row" style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr auto" }}>
+                        <div key={user.userId} className="booking-row" style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr 0.5fr auto" }}>
                             <span><strong>{user.name}</strong></span>
                             <span>{user.email}</span>
                             <span className="payment-tag">{user.role}</span>
                             <span>{user.city}</span>
-                            <button className="cancel-btn" onClick={() => handleDelete(user.userId)}>Deactivate</button>
+                            <span>{user.verified ? "Active" : "Inactive"}</span>
+                            <button 
+                                className="cancel-btn" 
+                                style={{ background: user.verified ? "var(--danger)" : "var(--success)" }}
+                                onClick={() => handleDelete(user.userId, user.verified)}
+                            >
+                                {user.verified ? "Deactivate" : "Activate"}
+                            </button>
                         </div>
                     ))
                 )}

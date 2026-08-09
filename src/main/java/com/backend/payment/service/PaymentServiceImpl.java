@@ -1,6 +1,7 @@
 package com.backend.payment.service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.json.JSONObject;
@@ -11,8 +12,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.backend.booking.entity.Booking;
 import com.backend.booking.repository.BookingRepository;
+import com.backend.common.enums.BookingStatus;
 import com.backend.common.enums.PaymentStatus;
-import com.backend.exception.DuplicateResourceException;
 import com.backend.exception.ResourceNotFoundException;
 import com.backend.payment.dto.PaymentRequestDto;
 import com.backend.payment.dto.PaymentResponseDto;
@@ -20,21 +21,15 @@ import com.backend.payment.dto.PaymentVerificationRequestDto;
 import com.backend.payment.entity.Payment;
 import com.backend.payment.repository.PaymentRepository;
 import com.backend.security.AuthUtils;
+import com.backend.services.entity.Services;
+import com.backend.services.repository.ServicesRepository;
+import com.backend.user.entity.User;
+import com.backend.user.repository.UserRepository;
 import com.backend.usersubscription.entity.UserSubscription;
 import com.backend.usersubscription.repository.UserSubscriptionRepository;
 import com.razorpay.Order;
 import com.razorpay.RazorpayClient;
 import com.razorpay.RazorpayException;
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
-import java.util.Base64;
-import java.time.LocalDate;
-import com.razorpay.Order;
-import com.razorpay.RazorpayClient;
-import com.razorpay.RazorpayException;
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
-import java.util.Base64;
 
 @Service
 public class PaymentServiceImpl implements PaymentService {
@@ -43,46 +38,53 @@ public class PaymentServiceImpl implements PaymentService {
     private final PaymentRepository paymentRepository;
     private final BookingRepository bookingRepository;
     private final UserSubscriptionRepository userSubscriptionRepository;
+    private final ServicesRepository servicesRepository;
+    private final UserRepository userRepository;
     private final RazorpayClient razorpayClient;
     private final String razorpayKeyId;
 
     public PaymentServiceImpl(PaymentRepository paymentRepository,
             BookingRepository bookingRepository,
             UserSubscriptionRepository userSubscriptionRepository,
+            ServicesRepository servicesRepository,
+            UserRepository userRepository,
             RazorpayClient razorpayClient,
             @Value("${razorpay.key.id}") String razorpayKeyId,
             @Value("${razorpay.key.secret}") String razorpayKeySecret) {
         this.paymentRepository = paymentRepository;
         this.bookingRepository = bookingRepository;
         this.userSubscriptionRepository = userSubscriptionRepository;
+        this.servicesRepository = servicesRepository;
+        this.userRepository = userRepository;
         this.razorpayClient = razorpayClient;
         this.razorpayKeyId = razorpayKeyId != null ? razorpayKeyId.trim() : null;
         this.razorpayKeySecret = razorpayKeySecret != null ? razorpayKeySecret.trim() : null;
-
-        System.out.println("KEY_ID = " + this.razorpayKeyId);
-        System.out.println("KEY_SECRET = " + this.razorpayKeySecret);
     }
+
     @Override
     @Transactional
     public PaymentResponseDto createPayment(PaymentRequestDto requestDto) {
+        
+        Long loggedInUserId = AuthUtils.currentUserId();
+        
+        Services service = servicesRepository.findById(requestDto.getServiceId())
+                .orElseThrow(() -> new ResourceNotFoundException("Service not found"));
+        
+        double finalAmount = service.getBasePrice();
+        
+        Optional<UserSubscription> subscription = userSubscriptionRepository
+                .findFirstByUser_UserIdAndStatusAndEndDateGreaterThanEqual(
+                        loggedInUserId, "ACTIVE", java.time.LocalDate.now());
 
-        Booking booking = bookingRepository.findById(requestDto.getBookingId())
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Booking not found with id: " + requestDto.getBookingId()));
-
-        // Only the customer who owns this booking can pay for it.
-        if (!AuthUtils.isAdmin() && !AuthUtils.isSelf(booking.getCustomer().getUserId())) {
-            throw new AccessDeniedException("You can only pay for your own bookings");
+        if (subscription.isPresent() && subscription.get().getRemainingUses() != null && subscription.get().getRemainingUses() > 0) {
+            double discount = subscription.get().getPlan().getDiscount();
+            finalAmount = finalAmount - (finalAmount * discount / 100.0);
         }
 
-        if (paymentRepository.existsByBooking_BookingId(requestDto.getBookingId())) {
-            throw new DuplicateResourceException(
-                    "Payment already exists for booking id: " + requestDto.getBookingId());
-        }
         JSONObject orderRequest = new JSONObject();
-        orderRequest.put("amount", booking.getFinalAmount().intValue() * 100);
+        orderRequest.put("amount", (int) (finalAmount * 100));
         orderRequest.put("currency", "INR");
-        orderRequest.put("receipt", "booking_" + booking.getBookingId());
+        orderRequest.put("receipt", "svc_" + requestDto.getServiceId() + "_" + System.currentTimeMillis());
         Order razorpayOrder;
 
         try {
@@ -90,35 +92,20 @@ public class PaymentServiceImpl implements PaymentService {
         } catch (RazorpayException e) {
             throw new RuntimeException("Failed to create Razorpay order", e);
         }
+        
         String razorpayOrderId = razorpayOrder.get("id").toString();
        
-        Payment payment = Payment.builder()
-                .amount(booking.getFinalAmount())
+        return PaymentResponseDto.builder()
+                .amount(finalAmount)
                 .paymentMethod(requestDto.getPaymentMethod())
                 .paymentStatus(PaymentStatus.PENDING)
                 .razorpayOrderId(razorpayOrderId)
-                .booking(booking)
                 .build();
-        Payment savedPayment = paymentRepository.save(payment);
-
-        return convertToResponse(savedPayment);
-        
     }
+
     @Override
     @Transactional
-    public PaymentResponseDto verifyPayment(
-            PaymentVerificationRequestDto requestDto) {
-
-        System.out.println("VERIFY_PAYMENT_DEBUG: Received payload - OrderId: " + requestDto.getRazorpayOrderId() + 
-                ", PaymentId: " + requestDto.getRazorpayPaymentId() + 
-                ", Signature: " + requestDto.getRazorpaySignature());
-
-        Payment payment = paymentRepository
-                .findByRazorpayOrderId(requestDto.getRazorpayOrderId())
-                .orElseThrow(() -> {
-                    System.out.println("VERIFY_PAYMENT_DEBUG: Failure - Payment not found for OrderId: " + requestDto.getRazorpayOrderId());
-                    return new ResourceNotFoundException("Payment not found");
-                });
+    public PaymentResponseDto verifyPayment(PaymentVerificationRequestDto requestDto) {
 
         try {
             JSONObject options = new JSONObject();
@@ -129,25 +116,63 @@ public class PaymentServiceImpl implements PaymentService {
             boolean isValid = com.razorpay.Utils.verifyPaymentSignature(options, razorpayKeySecret);
 
             if (!isValid) {
-                System.out.println("VERIFY_PAYMENT_DEBUG: Failure - Signature mismatch. Received: " + requestDto.getRazorpaySignature());
-                payment.setPaymentStatus(PaymentStatus.FAILED);
-                paymentRepository.save(payment);
                 throw new RuntimeException("Invalid payment signature");
             }
-        } catch (RazorpayException e) {
-            System.out.println("VERIFY_PAYMENT_DEBUG: Failure - Exception during signature verification: " + e.getMessage());
-            payment.setPaymentStatus(PaymentStatus.FAILED);
-            paymentRepository.save(payment);
+        } catch (Exception e) {
             throw new RuntimeException("Error verifying signature", e);
         }
 
-        System.out.println("VERIFY_PAYMENT_DEBUG: Success - Payment verified successfully!");
-        payment.setRazorpayPaymentId(requestDto.getRazorpayPaymentId());
-        payment.setPaymentStatus(PaymentStatus.SUCCESS);
+        Long loggedInUserId = AuthUtils.currentUserId();
+        User customer = userRepository.findById(loggedInUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+                
+        Services service = servicesRepository.findById(requestDto.getServiceId())
+                .orElseThrow(() -> new ResourceNotFoundException("Service not found"));
+                
+        double finalAmount = service.getBasePrice();
         
+        Optional<UserSubscription> subscriptionOpt = userSubscriptionRepository
+                .findFirstByUser_UserIdAndStatusAndEndDateGreaterThanEqual(
+                        loggedInUserId, "ACTIVE", java.time.LocalDate.now());
 
-
-        return convertToResponse(paymentRepository.save(payment));
+        if (subscriptionOpt.isPresent() && subscriptionOpt.get().getRemainingUses() != null && subscriptionOpt.get().getRemainingUses() > 0) {
+            UserSubscription subscription = subscriptionOpt.get();
+            double discount = subscription.getPlan().getDiscount();
+            finalAmount = finalAmount - (finalAmount * discount / 100.0);
+            
+            // Decrement subscription usage
+            subscription.setRemainingUses(subscription.getRemainingUses() - 1);
+            if (subscription.getRemainingUses() <= 0) {
+                subscription.setStatus("EXHAUSTED");
+            }
+            userSubscriptionRepository.save(subscription);
+        }
+        
+        // Save booking ONLY after successful payment
+        Booking booking = Booking.builder()
+                .date(requestDto.getDate())
+                .bookingTime(requestDto.getBookingTime())
+                .finalAmount(finalAmount)
+                .serviceAddress(requestDto.getServiceAddress())
+                .status(BookingStatus.PENDING)
+                .customer(customer)
+                .service(service)
+                .build();
+                
+        Booking savedBooking = bookingRepository.save(booking);
+        
+        Payment payment = Payment.builder()
+                .amount(finalAmount)
+                .paymentMethod(requestDto.getPaymentMethod())
+                .paymentStatus(PaymentStatus.SUCCESS)
+                .razorpayOrderId(requestDto.getRazorpayOrderId())
+                .razorpayPaymentId(requestDto.getRazorpayPaymentId())
+                .booking(savedBooking)
+                .build();
+                
+        Payment savedPayment = paymentRepository.save(payment);
+        
+        return convertToResponse(savedPayment);
     }
 
     @Override
@@ -192,10 +217,6 @@ public class PaymentServiceImpl implements PaymentService {
     @Transactional
     public PaymentResponseDto updateStatus(Long paymentId, PaymentStatus status) {
 
-        // Payment status changes are effectively financial reconciliation
-        // (matching a Razorpay callback/webhook outcome) - admin/system only,
-        // never something a customer or partner should be able to trigger
-        // directly.
         if (!AuthUtils.isAdmin()) {
             throw new AccessDeniedException("Only an admin can update a payment's status");
         }
@@ -248,27 +269,5 @@ public class PaymentServiceImpl implements PaymentService {
                 .bookingId(payment.getBooking().getBookingId())
                 .razorpayOrderId(payment.getRazorpayOrderId())
                 .build();
-    }
-    private String generateSignature(String orderId, String paymentId) {
-        try {
-            String payload = orderId + "|" + paymentId;
-
-            javax.crypto.Mac sha256_HMAC = javax.crypto.Mac.getInstance("HmacSHA256");
-
-            javax.crypto.spec.SecretKeySpec secret_key =
-                    new javax.crypto.spec.SecretKeySpec(
-                            razorpayKeySecret.getBytes(),
-                            "HmacSHA256"
-                    );
-
-            sha256_HMAC.init(secret_key);
-
-            byte[] hash = sha256_HMAC.doFinal(payload.getBytes());
-
-            return org.apache.commons.codec.binary.Hex.encodeHexString(hash);
-
-        } catch (Exception e) {
-            throw new RuntimeException("Signature generation failed", e);
-        }
     }
 }

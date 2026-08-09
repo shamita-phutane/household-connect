@@ -24,8 +24,6 @@ public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
-    // Wrong email/password. Kept deliberately generic - never confirm whether
-    // the email itself exists, so callers can't enumerate registered accounts.
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<Map<String, Object>> handleBadCredentials(BadCredentialsException ex) {
         return buildResponse(HttpStatus.UNAUTHORIZED, "Invalid email or password");
@@ -41,16 +39,11 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.FORBIDDEN, "Account is locked");
     }
 
-    // Catch-all for any other Spring Security authentication failure so it never
-    // falls through to the generic 500 handler below.
     @ExceptionHandler({AuthenticationException.class, AuthenticationServiceException.class})
     public ResponseEntity<Map<String, Object>> handleAuthentication(AuthenticationException ex) {
         return buildResponse(HttpStatus.UNAUTHORIZED, "Authentication failed");
     }
 
-    // Authenticated, but wrong role for this endpoint (e.g. CUSTOMER hitting an
-    // ADMIN-only route) when triggered from within a service/controller method
-    // rather than the security filter chain (which uses accessDeniedHandler()).
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<Map<String, Object>> handleAccessDenied(AccessDeniedException ex) {
         return buildResponse(HttpStatus.FORBIDDEN, "You do not have permission to access this resource");
@@ -72,9 +65,6 @@ public class GlobalExceptionHandler {
         for (FieldError error : ex.getBindingResult().getFieldErrors()) {
             fieldErrors.put(error.getField(), error.getDefaultMessage());
         }
-        // Frontend forms (Login/Register) only render error.response.data.message,
-        // not the field-level "errors" map - without this, validation failures
-        // (bad phone format, weak password, etc.) fail silently in the UI.
         String firstMessage = fieldErrors.values().stream()
                 .findFirst()
                 .orElse("Validation failed");

@@ -267,17 +267,7 @@ function BookingConfirmation() {
 
                         {!payment &&
 
-                            <button
-
-                                className="primary-action"
-
-                                onClick={() => navigate(`/customer/payments/${booking.bookingId}`)}
-
-                            >
-
-                                Complete Payment
-
-                            </button>
+                            <span style={{ color: 'var(--text-secondary)' }}>Payment required at checkout</span>
 
                         }
 

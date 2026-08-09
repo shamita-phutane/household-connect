@@ -17,23 +17,18 @@ public class DatabaseSeeder {
         return args -> {
             try {
                 jdbcTemplate.execute("ALTER TABLE bookings DROP COLUMN is_priority");
-                System.out.println("SEEDER: Dropped is_priority column from bookings table.");
-            } catch (Exception e) {}
-            
-            try {
-                jdbcTemplate.execute("ALTER TABLE user_subscriptions DROP COLUMN remaining_uses");
-                System.out.println("SEEDER: Dropped remaining_uses column from user_subscriptions table.");
             } catch (Exception e) {}
 
             try {
                 jdbcTemplate.execute("ALTER TABLE subscription_plans DROP COLUMN max_uses");
                 jdbcTemplate.execute("ALTER TABLE subscription_plans DROP COLUMN priority_booking");
                 jdbcTemplate.execute("ALTER TABLE subscription_plans DROP COLUMN free_cancellation");
-                System.out.println("SEEDER: Dropped max_uses, priority_booking, free_cancellation columns from subscription_plans table.");
             } catch (Exception e) {}
             
-            // Avoid recreating if already exists with same count to prevent unique constraint or overwrite issues, 
-            // but we want to make sure it's seeded exactly as user wants.
+            try {
+                jdbcTemplate.execute("ALTER TABLE bookings MODIFY COLUMN status ENUM('PENDING', 'ACCEPTED', 'COMPLETED', 'CANCELLED', 'REJECTED') NOT NULL");
+            } catch (Exception e) {}
+            
             if(repository.count() < 3) {
                 repository.deleteAll();
                 
@@ -56,7 +51,6 @@ public class DatabaseSeeder {
                 elite.setDescription("15% discount,Free cancellation anytime before service,Instant booking confirmation,Dedicated support,Exclusive peak-time availability");
 
                 repository.saveAll(List.of(basic, pro, elite));
-                System.out.println("SEEDER: Real subscription plans initialized.");
             }
         };
     }

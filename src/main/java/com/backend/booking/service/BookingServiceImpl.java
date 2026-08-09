@@ -48,52 +48,7 @@ public class BookingServiceImpl implements BookingService {
     @Override
     @Transactional
     public BookingResponseDto createBooking(BookingRequestDto requestDto) {
-
-        // ✅ ALWAYS take user from JWT (FINAL FIX)
-    	Long loggedInUserId = AuthUtils.currentUserId();
-
-        User customer = userRepository.findById(loggedInUserId)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "User not found with id: " + loggedInUserId));
-
-        if (customer.getRole() != Role.CUSTOMER) {
-            throw new AccessDeniedException("Only customers can create bookings");
-        }
-
-        Services service = servicesRepository.findById(requestDto.getServiceId())
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Service not found with id: " + requestDto.getServiceId()));
-
-        double originalAmount = service.getBasePrice();
-        double finalAmount = originalAmount;
-
-        // ✅ Apply subscription discount (if exists)
-        Optional<UserSubscription> subscription =
-                userSubscriptionRepository
-                        .findFirstByUser_UserIdAndStatusAndEndDateGreaterThanEqual(
-                                loggedInUserId,
-                                "ACTIVE",
-                                java.time.LocalDate.now());
-
-        if (subscription.isPresent()) {
-            UserSubscription sub = subscription.get();
-            double discount = sub.getPlan().getDiscount();
-            finalAmount = finalAmount - (finalAmount * discount / 100.0);
-        }
-
-        Booking booking = Booking.builder()
-                .date(requestDto.getDate())
-                .bookingTime(requestDto.getBookingTime())
-                .finalAmount(finalAmount)
-                .serviceAddress(requestDto.getServiceAddress())
-                .status(BookingStatus.PENDING)
-                .customer(customer)
-                .service(service)
-                .build();
-
-        Booking savedBooking = bookingRepository.save(booking);
-
-        return convertToResponse(savedBooking);
+        throw new InvalidRequestException("Bookings must be created through the payment verification flow to ensure payment success.");
     }
 
     @Override
@@ -221,6 +176,42 @@ public class BookingServiceImpl implements BookingService {
         if (!allowed) {
             throw new AccessDeniedException(
                     "You cannot update this booking");
+        }
+
+        if (isCustomer && status == BookingStatus.CANCELLED && !AuthUtils.isAdmin()) {
+            java.time.LocalDateTime bookingDateTime = java.time.LocalDateTime.of(booking.getDate(), booking.getBookingTime());
+            if (java.time.LocalDateTime.now().plusHours(24).isAfter(bookingDateTime)) {
+                throw new InvalidRequestException("Cancellations must be made at least 24 hours in advance.");
+            }
+        }
+
+        if ((status == BookingStatus.CANCELLED || status == BookingStatus.REJECTED) 
+                && booking.getStatus() != BookingStatus.CANCELLED 
+                && booking.getStatus() != BookingStatus.REJECTED) {
+            
+            double originalAmount = booking.getService().getBasePrice();
+            if (booking.getFinalAmount() < originalAmount) {
+                java.util.Optional<UserSubscription> subOpt = userSubscriptionRepository
+                        .findFirstByUser_UserIdAndStatusAndEndDateGreaterThanEqual(
+                                booking.getCustomer().getUserId(), "ACTIVE", java.time.LocalDate.now());
+                
+                if (subOpt.isEmpty()) {
+                    subOpt = userSubscriptionRepository
+                            .findFirstByUser_UserIdAndStatusAndEndDateGreaterThanEqual(
+                                    booking.getCustomer().getUserId(), "EXHAUSTED", java.time.LocalDate.now());
+                }
+
+                if (subOpt.isPresent()) {
+                    UserSubscription sub = subOpt.get();
+                    if (sub.getRemainingUses() < sub.getMaxUses()) {
+                        sub.setRemainingUses(sub.getRemainingUses() + 1);
+                        if (sub.getRemainingUses() > 0 && "EXHAUSTED".equals(sub.getStatus())) {
+                            sub.setStatus("ACTIVE");
+                        }
+                        userSubscriptionRepository.save(sub);
+                    }
+                }
+            }
         }
 
         booking.setStatus(status);

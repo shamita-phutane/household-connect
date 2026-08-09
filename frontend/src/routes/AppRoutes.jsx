@@ -133,7 +133,7 @@ function AppRoutes() {
                 />
 
                 <Route
-                    path="/customer/payments/:bookingId"
+                    path="/customer/payments"
                     element={
                         <ProtectedRoute allowedRoles={["CUSTOMER"]}>
                             <Payments />

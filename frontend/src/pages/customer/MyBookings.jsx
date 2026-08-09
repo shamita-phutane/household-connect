@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { useAuth } from "../../context/AuthContext";
-import { getCustomerBookings } from "../../api/bookingApi";
+import { getCustomerBookings, updateBookingStatus } from "../../api/bookingApi";
 import { getAllReviews, createReview } from "../../api/reviewApi";
 
 function bookingStatusClass(status) {
@@ -12,7 +12,8 @@ function bookingStatusClass(status) {
         case "COMPLETED": return "completed";
         case "PENDING": return "pending";
         case "ACCEPTED": return "accepted";
-        case "CANCELLED": return "cancelled";
+        case "CANCELLED":
+        case "REJECTED": return "cancelled";
         default: return "";
     }
 }
@@ -23,6 +24,7 @@ function bookingStatusLabel(status) {
         case "ACCEPTED": return "Confirmed";
         case "COMPLETED": return "Completed";
         case "CANCELLED": return "Cancelled";
+        case "REJECTED": return "Rejected";
         default: return status;
     }
 }
@@ -92,6 +94,33 @@ function MyBookings() {
             alert("Failed to submit review.");
         }
     }
+        
+    async function handleCancelBooking(booking) {
+        if (!booking.date || !booking.bookingTime) {
+            alert("Unable to cancel: missing booking date/time.");
+            return;
+        }
+
+        const bookingDateTime = new Date(`${booking.date}T${booking.bookingTime}`);
+        const now = new Date();
+        const diffMs = bookingDateTime - now;
+        
+        if (diffMs < 24 * 60 * 60 * 1000) {
+            alert("Cancellations must be made at least 24 hours in advance.");
+            return;
+        }
+
+        if (window.confirm("Are you sure you want to cancel this booking? Your refund will be processed within 5-7 business days.")) {
+            try {
+                await updateBookingStatus(booking.bookingId, "CANCELLED");
+                setBookings(prev => prev.map(b => b.bookingId === booking.bookingId ? { ...b, status: "CANCELLED" } : b));
+                alert("Booking cancelled successfully. A refund will be initiated.");
+            } catch (err) {
+                console.error(err);
+                alert(err.response?.data?.message || "Failed to cancel booking.");
+            }
+        }
+    }
 
     if (loading) {
         return (
@@ -116,7 +145,16 @@ function MyBookings() {
     return (
         <section className="my-bookings">
             <div className="container">
-                <h1>My Bookings</h1>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+                    <h1>My Bookings</h1>
+                    <button 
+                        onClick={() => navigate("/customer/dashboard")} 
+                        className="pay-btn" 
+                        style={{ background: "transparent", color: "var(--accent-color)", border: "1px solid var(--accent-color)", padding: "8px 16px" }}
+                    >
+                        Back to Dashboard
+                    </button>
+                </div>
                 <p className="my-bookings-subtitle">
                     Every service you've booked, in one place.
                 </p>
@@ -151,9 +189,7 @@ function MyBookings() {
                                     </div>
                                     <div className="booking-actions">
                                         {booking.paymentStatus !== "SUCCESS" && booking.status !== "CANCELLED" && (
-                                            <button className="pay-btn" onClick={() => navigate(`/customer/payments/${booking.bookingId}`)}>
-                                                Pay Now
-                                            </button>
+                                            <span style={{ color: 'var(--text-secondary)' }}>Payment required at checkout</span>
                                         )}
 
                                         {booking.paymentStatus === "SUCCESS" && (
@@ -163,9 +199,15 @@ function MyBookings() {
                                         )}
 
                                         {(booking.status === "PENDING" || booking.status === "ACCEPTED") && (
-                                            <button className="cancel-btn" onClick={() => alert("Cancellation will be supported soon.")}>
+                                            <button className="cancel-btn" onClick={() => handleCancelBooking(booking)}>
                                                 Cancel Booking
                                             </button>
+                                        )}
+                                        
+                                        {(booking.status === "CANCELLED" || booking.status === "REJECTED") && (
+                                            <span style={{ color: "var(--danger)", fontSize: "0.9rem", display: "block", marginTop: "10px" }}>
+                                                Refund will be processed in 5-7 business days.
+                                            </span>
                                         )}
 
                                         {booking.status === "COMPLETED" && !existingReview && (

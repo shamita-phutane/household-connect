@@ -18,7 +18,6 @@ public class AdminInitializer {
             String adminEmail = "admin@test.com";
 
             if (userRepository.findByEmail(adminEmail).isPresent()) {
-                System.out.println("Admin already exists.");
                 return;
             }
 
@@ -33,8 +32,6 @@ public class AdminInitializer {
                     .build();
 
             userRepository.save(admin);
-
-            System.out.println("Admin user created successfully!");
         };
     }
 }

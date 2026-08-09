@@ -16,4 +16,6 @@ public interface UserSubscriptionService {
     UserSubscriptionResponseDto getSubscriptionById(Long subId);
 
     List<UserSubscriptionResponseDto> getSubscriptionsByUserId(Long userId);
+
+    UserSubscriptionResponseDto cancelSubscription(Long subId);
 }

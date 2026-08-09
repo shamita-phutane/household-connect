@@ -153,7 +153,9 @@ public class UserServiceImpl implements UserService {
                         new ResourceNotFoundException(
                                 "User not found with id: " + userId));
 
-        userRepository.delete(user);
+        // Toggle verified status instead of hard delete to avoid foreign key constraints
+        user.setVerified(!user.getVerified());
+        userRepository.save(user);
     }
 
     @Override

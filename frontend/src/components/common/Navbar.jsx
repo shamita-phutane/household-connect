@@ -123,8 +123,8 @@ function Navbar() {
                         <>
 
                             {user?.role === "CUSTOMER" && (
-                                <Link to="/my-bookings" onClick={closeMenu}>
-                                    My Bookings
+                                <Link to="/customer/dashboard" onClick={closeMenu}>
+                                    My Dashboard
                                 </Link>
                             )}
                             

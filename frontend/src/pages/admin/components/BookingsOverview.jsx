@@ -7,7 +7,8 @@ function statusClass(status) {
         case "COMPLETED": return "completed";
         case "PENDING": return "pending";
         case "ACCEPTED": return "accepted";
-        case "CANCELLED": return "cancelled";
+        case "CANCELLED":
+        case "REJECTED": return "cancelled";
         default: return "";
     }
 }
@@ -63,7 +64,7 @@ export default function BookingsOverview({ bookings, refreshBookings }) {
 
             {showFilters && (
                 <div style={{ marginBottom: "20px", display: "flex", gap: "10px" }}>
-                    {["ALL", "PENDING", "ACCEPTED", "COMPLETED", "CANCELLED"].map(status => (
+                    {["ALL", "PENDING", "ACCEPTED", "COMPLETED", "CANCELLED", "REJECTED"].map(status => (
                         <button 
                             key={status}
                             className="pay-btn" 
@@ -96,14 +97,48 @@ export default function BookingsOverview({ bookings, refreshBookings }) {
                             
                             <div style={{ display: "flex", flexDirection: "column", gap: "5px", alignItems: "flex-start" }}>
                                 <span className={statusClass(booking.status)}>{booking.status}</span>
-                                {!booking.partnerName && booking.status !== "CANCELLED" && (
+                                {!booking.partnerName && booking.status !== "CANCELLED" && booking.status !== "REJECTED" && (
                                     <button 
                                         className="pay-btn" 
-                                        style={{ padding: "5px 10px", fontSize: "0.8rem", width: "100%" }}
+                                        style={{ padding: "5px 10px", fontSize: "0.8rem", width: "100%", marginBottom: "5px" }}
                                         onClick={() => handleAssignClick(booking)}
                                     >
                                         Assign Partner
                                     </button>
+                                )}
+                                {booking.status !== "CANCELLED" && booking.status !== "REJECTED" && booking.status !== "COMPLETED" && (
+                                    <div style={{ display: "flex", gap: "5px", width: "100%" }}>
+                                        <button 
+                                            className="secondary-btn" 
+                                            style={{ padding: "5px", fontSize: "0.75rem", width: "50%", background: "#fee2e2", color: "#dc2626", border: "none" }}
+                                            onClick={async () => {
+                                                if (window.confirm("Reject this booking?")) {
+                                                    try {
+                                                        const { updateBookingStatus } = await import("../../../api/bookingApi");
+                                                        await updateBookingStatus(booking.bookingId, "REJECTED");
+                                                        if (refreshBookings) refreshBookings();
+                                                    } catch (e) { alert("Failed to reject booking"); }
+                                                }
+                                            }}
+                                        >
+                                            Reject
+                                        </button>
+                                        <button 
+                                            className="secondary-btn" 
+                                            style={{ padding: "5px", fontSize: "0.75rem", width: "50%", background: "#f3f4f6", color: "#4b5563", border: "none" }}
+                                            onClick={async () => {
+                                                if (window.confirm("Cancel this booking?")) {
+                                                    try {
+                                                        const { updateBookingStatus } = await import("../../../api/bookingApi");
+                                                        await updateBookingStatus(booking.bookingId, "CANCELLED");
+                                                        if (refreshBookings) refreshBookings();
+                                                    } catch (e) { alert("Failed to cancel booking"); }
+                                                }
+                                            }}
+                                        >
+                                            Cancel
+                                        </button>
+                                    </div>
                                 )}
                             </div>
                         </div>

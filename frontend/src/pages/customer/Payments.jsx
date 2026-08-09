@@ -1,449 +1,242 @@
 import "./Payments.css";
-
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-
-import { getBookingById } from "../../api/bookingApi";
 import { getSubscriptionsByUser } from "../../api/userSubscriptionApi";
 import { createPayment, verifyPayment, getRazorpayKey } from "../../api/paymentApi";
 
 const PAYMENT_METHODS = [
-
     { value: "UPI", label: "UPI" },
     { value: "CREDIT_CARD", label: "Credit Card" },
     { value: "DEBIT_CARD", label: "Debit Card" },
     { value: "NET_BANKING", label: "Net Banking" },
     { value: "CASH", label: "Cash" }
-
 ];
 
 function Payments() {
-
-    const { bookingId } = useParams();
-
     const { user } = useAuth();
-
     const navigate = useNavigate();
-
-    const [booking, setBooking] = useState(null);
+    const location = useLocation();
+    const bookingDetails = location.state?.bookingDetails;
 
     const [activePlan, setActivePlan] = useState(null);
-
     const [paymentMethod, setPaymentMethod] = useState("UPI");
-
     const [loading, setLoading] = useState(true);
-
-    const [loadError, setLoadError] = useState("");
-
     const [processing, setProcessing] = useState(false);
-
     const [payError, setPayError] = useState("");
+    const [calculatedPrice, setCalculatedPrice] = useState(0);
 
     useEffect(() => {
+        if (!bookingDetails) {
+            navigate("/services");
+            return;
+        }
 
         async function loadData() {
-
             try {
-
-                const [bookingData, subscriptions] = await Promise.all([
-
-                    getBookingById(bookingId),
-
-                    getSubscriptionsByUser(user.userId)
-
-                ]);
-
-                if (bookingData.paymentStatus === "SUCCESS") {
-
-                    navigate(`/customer/bookings/${bookingId}?confirmed=true`, { replace: true });
-
-                    return;
-
-                }
-
-                setBooking(bookingData);
-
+                const subscriptions = await getSubscriptionsByUser(user.userId);
                 const active = subscriptions.find(
                     subscription => subscription.status === "ACTIVE"
                 );
-
-                setActivePlan(active || null);
-
-            }
-
-            catch (error) {
-
+                const exhausted = subscriptions.find(
+                    subscription => subscription.status === "EXHAUSTED"
+                );
+                setActivePlan(active || exhausted || null);
+                
+                let finalPrice = bookingDetails.basePrice;
+                if (active) {
+                    finalPrice = finalPrice - (finalPrice * active.discount / 100.0);
+                }
+                setCalculatedPrice(Math.round(finalPrice));
+            } catch (error) {
                 console.error(error);
-
-                setLoadError("Unable to load this booking. It may not exist or you may not have access to it.");
-
-            }
-
-            finally {
-
+                setPayError("Unable to load subscription details.");
+            } finally {
                 setLoading(false);
-
             }
-
         }
-
         loadData();
-
-    }, [bookingId, user.userId, navigate]);
+    }, [bookingDetails, user.userId, navigate]);
 
     async function handlePay() {
-
         setPayError("");
-
         setProcessing(true);
 
         try {
-
-            const [payment, razorpayConfig] = await Promise.all([
-
+            const [paymentResponse, razorpayConfig] = await Promise.all([
                 createPayment({
-
-                    bookingId: booking.bookingId,
-
+                    serviceId: bookingDetails.serviceId,
                     paymentMethod
-
                 }),
-
                 getRazorpayKey()
-
             ]);
 
             if (!window.Razorpay) {
-
                 setPayError("Payment gateway failed to load. Please refresh and try again.");
-
                 setProcessing(false);
-
                 return;
-
             }
 
             const checkout = new window.Razorpay({
-
                 key: razorpayConfig.keyId,
-
-                amount: Math.round(payment.amount * 100),
-
+                amount: Math.round(paymentResponse.amount * 100),
                 currency: "INR",
-
-                order_id: payment.razorpayOrderId,
-
+                order_id: paymentResponse.razorpayOrderId,
                 name: "Household Connect",
-
-                description: booking.serviceName,
-
+                description: bookingDetails.serviceName,
                 prefill: {
-
                     name: user.name,
-
                     email: user.email
-
                 },
-
                 theme: {
-
                     color: "#c6a15b"
-
                 },
-
                 handler: async function (response) {
-
                     try {
-
-                        await verifyPayment({
+                        const verifiedPayment = await verifyPayment({
                             razorpayOrderId: response.razorpay_order_id,
                             razorpayPaymentId: response.razorpay_payment_id,
-                            razorpaySignature: response.razorpay_signature
+                            razorpaySignature: response.razorpay_signature,
+                            serviceId: bookingDetails.serviceId,
+                            date: bookingDetails.date,
+                            bookingTime: bookingDetails.bookingTime,
+                            serviceAddress: bookingDetails.serviceAddress,
+                            paymentMethod: paymentMethod
                         });
-
-                        navigate(`/customer/bookings/${booking.bookingId}?confirmed=true`);
-
-                    }
-
-                    catch (verifyError) {
-
+                        navigate(`/customer/bookings/${verifiedPayment.bookingId}?confirmed=true`);
+                    } catch (verifyError) {
                         console.error(verifyError);
-
                         setPayError(
-
                             "Payment went through but we couldn't verify it. Please contact support with payment id: " +
                             response.razorpay_payment_id
-
                         );
-
                         setProcessing(false);
-
                     }
-
                 },
-
                 modal: {
-
                     ondismiss: function () {
-
                         setProcessing(false);
-
                     }
-
                 }
-
             });
 
             checkout.on("payment.failed", function (response) {
-
                 console.error(response.error);
-
                 setPayError("Payment failed: " + response.error.description);
-
                 setProcessing(false);
-
             });
 
             checkout.open();
-
-        }
-
-        catch (error) {
-
+        } catch (error) {
             console.error(error);
-
             if (error.response) {
                 setPayError(error.response.data.message || "Unable to start payment.");
-            }
-            else {
+            } else {
                 setPayError("Unable to connect to server.");
             }
-
             setProcessing(false);
-
         }
-
     }
+
+    if (!bookingDetails) return null;
 
     if (loading) {
-
         return (
-
             <section className="payments-page">
-
                 <div className="container">
-
-                    <h2>Loading booking...</h2>
-
+                    <h2>Loading...</h2>
                 </div>
-
             </section>
-
         );
-
-    }
-
-    if (loadError) {
-
-        return (
-
-            <section className="payments-page">
-
-                <div className="container">
-
-                    <h2>{loadError}</h2>
-
-                </div>
-
-            </section>
-
-        );
-
     }
 
     return (
-
         <section className="payments-page">
-
             <div className="container">
-
                 <h1>Complete Payment</h1>
-
                 <p className="payments-subtitle">
-
                     Review your booking and choose how you'd like to pay.
-
                 </p>
-
                 <div className="payments-layout">
-
                     <div className="payment-methods-card">
-
                         <h3>Payment Method</h3>
-
                         <div className="method-grid">
-
-                            {
-
-                                PAYMENT_METHODS.map(method => (
-
-                                    <button
-
-                                        key={method.value}
-
-                                        type="button"
-
-                                        className={
-
-                                            paymentMethod === method.value
-                                                ? "method-option active"
-                                                : "method-option"
-
-                                        }
-
-                                        onClick={() => setPaymentMethod(method.value)}
-
-                                    >
-
-                                        {method.label}
-
-                                    </button>
-
-                                ))
-
-                            }
-
+                            {PAYMENT_METHODS.map(method => (
+                                <button
+                                    key={method.value}
+                                    type="button"
+                                    className={
+                                        paymentMethod === method.value
+                                            ? "method-option active"
+                                            : "method-option"
+                                    }
+                                    onClick={() => setPaymentMethod(method.value)}
+                                >
+                                    {method.label}
+                                </button>
+                            ))}
                         </div>
-
                         {payError &&
-
                             <p className="form-error">
-
                                 {payError}
-
                             </p>
-
                         }
-
                         <button
-
                             className="pay-now-btn"
-
                             onClick={handlePay}
-
                             disabled={processing}
-
                         >
-
-                            {
-
-                                processing
-                                    ? "Processing..."
-                                    : `Pay ₹${booking.finalAmount}`
-
-                            }
-
+                            {processing ? "Processing..." : `Pay ₹${calculatedPrice}`}
                         </button>
-
                     </div>
 
                     <aside className="booking-recap">
-
                         <h3>Booking Summary</h3>
-
                         <div className="recap-row">
-
                             <span>Service</span>
-
-                            <strong>{booking.serviceName}</strong>
-
+                            <strong>{bookingDetails.serviceName}</strong>
                         </div>
-
                         <div className="recap-row">
-
                             <span>Date</span>
-
-                            <strong>{booking.date}</strong>
-
+                            <strong>{bookingDetails.date}</strong>
                         </div>
-
                         <div className="recap-row">
-
                             <span>Time</span>
-
-                            <strong>{booking.bookingTime}</strong>
-
+                            <strong>{bookingDetails.bookingTime}</strong>
                         </div>
-
                         <div className="recap-row">
-
                             <span>Address</span>
-
-                            <strong>{booking.serviceAddress}</strong>
-
+                            <strong>{bookingDetails.serviceAddress}</strong>
                         </div>
 
                         <div className="recap-divider" />
-
                         <div className="recap-row">
-
                             <span>Original Price</span>
-
-                            <strong>₹{booking.originalAmount}</strong>
-
+                            <strong>₹{bookingDetails.basePrice}</strong>
                         </div>
-
-                        {booking.discountAmount > 0 ? (
+                        {activePlan && activePlan.status === "ACTIVE" && (
                             <div className="recap-row discount-row" style={{ color: 'green', fontWeight: 'bold', fontSize: '0.95rem' }}>
                                 <span>
-                                    ✨ You saved ₹{booking.discountAmount} using your {activePlan ? activePlan.planName : "Subscription"} plan!
+                                    ✨ Discount Applied with {activePlan.planName} plan!
                                 </span>
                             </div>
-                        ) : (
-                            <div className="upsell-banner" style={{ background: 'var(--surface)', border: '1px solid var(--accent-color)', padding: '15px', borderRadius: '8px', margin: '15px 0', fontSize: '0.9rem' }}>
-                                <strong style={{ display: 'block', marginBottom: '12px', color: 'var(--accent-color)', fontSize: '1rem' }}>💡 Pro Tip: Subscribe to save!</strong>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', color: 'var(--text-secondary)' }}>
-                                    <span>Original Price:</span>
-                                    <span style={{ textDecoration: 'line-through' }}>₹{booking.originalAmount}</span>
-                                </div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', color: 'var(--text-primary)', fontWeight: 'bold' }}>
-                                    <span>Discounted Price:</span>
-                                    <span>₹{Math.round(booking.originalAmount * 0.9)}</span>
-                                </div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', color: 'var(--accent-color)', fontWeight: 'bold' }}>
-                                    <span>Potential Savings:</span>
-                                    <span>₹{Math.round(booking.originalAmount * 0.1)}</span>
-                                </div>
-                                <button 
-                                    onClick={() => navigate('/#plans')} 
-                                    className="pay-btn"
-                                    style={{ width: '100%', padding: '10px', fontSize: '0.9rem', background: 'var(--accent-color)', color: '#000' }}
-                                >
-                                    View Plans & Save
-                                </button>
+                        )}
+                        {activePlan && activePlan.status === "EXHAUSTED" && (
+                            <div className="recap-row discount-row" style={{ color: 'var(--danger)', fontWeight: 'bold', fontSize: '0.85rem' }}>
+                                <span>
+                                    ⚠️ Your {activePlan.planName} plan perks are exhausted. Renew to get discounts!
+                                </span>
                             </div>
                         )}
-
                         <div className="recap-row total-row">
-
                             <span>Total</span>
-
-                            <strong>₹{booking.finalAmount}</strong>
-
+                            <strong>₹{calculatedPrice}</strong>
                         </div>
-
                     </aside>
-
                 </div>
-
             </div>
-
         </section>
-
     );
-
 }
 
 export default Payments;

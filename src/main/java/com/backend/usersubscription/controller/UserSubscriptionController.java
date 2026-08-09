@@ -44,4 +44,9 @@ public class UserSubscriptionController {
     public ResponseEntity<List<UserSubscriptionResponseDto>> getByUserId(@PathVariable Long userId) {
         return ResponseEntity.ok(userSubscriptionService.getSubscriptionsByUserId(userId));
     }
+
+    @PatchMapping("/{id}/cancel")
+    public ResponseEntity<UserSubscriptionResponseDto> cancelSubscription(@PathVariable Long id) {
+        return ResponseEntity.ok(userSubscriptionService.cancelSubscription(id));
+    }
 }

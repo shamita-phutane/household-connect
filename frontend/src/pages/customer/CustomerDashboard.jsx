@@ -13,7 +13,7 @@ import {
 
 import { useAuth } from "../../context/AuthContext";
 import { getCustomerBookings } from "../../api/bookingApi";
-import { getSubscriptionsByUser } from "../../api/userSubscriptionApi";
+import { getSubscriptionsByUser, cancelSubscription } from "../../api/userSubscriptionApi";
 
 function statusClass(status) {
     switch (status) {
@@ -24,6 +24,7 @@ function statusClass(status) {
         case "ACCEPTED":
             return "accepted";
         case "CANCELLED":
+        case "REJECTED":
             return "cancelled";
         default:
             return "";
@@ -36,6 +37,7 @@ function bookingStatusLabel(status) {
         case "ACCEPTED": return "Confirmed";
         case "COMPLETED": return "Completed";
         case "CANCELLED": return "Cancelled";
+        case "REJECTED": return "Rejected";
         default: return status;
     }
 }
@@ -74,7 +76,11 @@ function CustomerDashboard() {
                     subscription => subscription.status === "ACTIVE"
                 );
 
-                setActivePlan(active || null);
+                const exhausted = subscriptionData.find(
+                    subscription => subscription.status === "EXHAUSTED"
+                );
+
+                setActivePlan(active || exhausted || null);
 
             }
 
@@ -97,6 +103,22 @@ function CustomerDashboard() {
         loadDashboard();
 
     }, [user.userId]);
+
+    async function handleCancelSubscription(subId) {
+        if (window.confirm("Are you sure you want to cancel your subscription? No refund will be provided and you will lose access to all remaining perks.")) {
+            try {
+                await cancelSubscription(subId);
+                const subscriptionData = await getSubscriptionsByUser(user.userId);
+                const active = subscriptionData.find(s => s.status === "ACTIVE");
+                const exhausted = subscriptionData.find(s => s.status === "EXHAUSTED");
+                setActivePlan(active || exhausted || null);
+                alert("Subscription cancelled successfully.");
+            } catch (err) {
+                console.error(err);
+                alert(err.response?.data?.message || "Failed to cancel subscription.");
+            }
+        }
+    }
 
     if (loading) {
 
@@ -251,18 +273,42 @@ function CustomerDashboard() {
                             <h3 style={{margin: 0}}>My Subscription</h3>
                         </div>
                         {activePlan ? (
-                            <div style={{marginTop: '10px', fontSize: '0.95rem'}}>
-                                <strong>{activePlan.planName} Plan</strong> - Active<br/>
-                                <span style={{color: 'var(--text-secondary)'}}>Discount: {activePlan.discount}% OFF</span><br/>
-                                <span style={{color: 'var(--text-secondary)'}}>Expires: {activePlan.endDate}</span><br/>
-                                <ul style={{ marginTop: '10px', paddingLeft: '20px' }}>
-                                    {activePlan.description && activePlan.description.split(',').map((perk, index) => (
-                                        <li key={index} style={{ color: 'var(--primary)' }}>{perk.trim()}</li>
-                                    ))}
-                                </ul>
+                            <div style={{marginTop: '15px'}}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                    <div>
+                                        <strong style={{ fontSize: '1.2rem', display: 'block', marginBottom: '8px', color: 'var(--text-primary)' }}>{activePlan.planName} Plan</strong>
+                                        <span className={`badge ${activePlan.status === "EXHAUSTED" ? 'cancelled' : 'completed'}`} style={{ padding: '4px 10px', fontSize: '0.75rem', borderRadius: '12px', fontWeight: 'bold' }}>
+                                            {activePlan.status}
+                                        </span>
+                                    </div>
+                                    <button 
+                                        onClick={() => handleCancelSubscription(activePlan.subId)}
+                                        style={{ background: 'transparent', color: 'var(--danger)', border: '1px solid var(--danger)', padding: '6px 12px', borderRadius: '50px', fontSize: '0.8rem', cursor: 'pointer', fontWeight: '600' }}
+                                    >
+                                        Cancel Subscription
+                                    </button>
+                                </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '20px' }}>
+                                    <div style={{ background: 'var(--background)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                                        <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>Remaining Uses</span>
+                                        <strong style={{ fontSize: '1.1rem', color: 'var(--text-primary)' }}>{activePlan.remainingUses ?? 0}</strong>
+                                    </div>
+                                    <div style={{ background: 'var(--background)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                                        <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>Discount</span>
+                                        <strong style={{ fontSize: '1.1rem', color: 'var(--text-primary)' }}>{activePlan.discount}% OFF</strong>
+                                    </div>
+                                    <div style={{ background: 'var(--background)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                                        <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>Started On</span>
+                                        <strong style={{ fontSize: '0.9rem', color: 'var(--text-primary)' }}>{activePlan.startDate}</strong>
+                                    </div>
+                                    <div style={{ background: 'var(--background)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                                        <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>Expires On</span>
+                                        <strong style={{ fontSize: '0.9rem', color: 'var(--text-primary)' }}>{activePlan.endDate}</strong>
+                                    </div>
+                                </div>
                             </div>
                         ) : (
-                            <span style={{marginTop: '10px'}}>None</span>
+                            <span style={{marginTop: '10px', color: 'var(--text-secondary)'}}>None</span>
                         )}
                     </div>
 
@@ -292,7 +338,7 @@ function CustomerDashboard() {
 
                     </button>
 
-                    <button onClick={() => navigate("/#plans")}>
+                    <button onClick={() => navigate("/plans")}>
 
                         View Plans
 

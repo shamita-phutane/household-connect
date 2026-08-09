@@ -13,9 +13,8 @@ import lombok.*;
 @Builder
 public class PaymentRequestDto {
 
-    @NotNull(message = "Booking id is required")
-    private Long bookingId;
-
+    @NotNull(message = "Service id is required")
+    private Long serviceId;
 
     @NotNull(message = "Payment method is required")
     private PaymentMethod paymentMethod;

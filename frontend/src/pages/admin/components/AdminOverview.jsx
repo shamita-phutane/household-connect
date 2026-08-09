@@ -212,17 +212,40 @@ export default function AdminOverview({ users, bookings, payments, services, ref
                                             ₹{booking.finalAmount}
                                         </td>
                                         <td style={{ padding: "16px 12px", verticalAlign: "middle" }}>
-                                            {!booking.partnerName && booking.status !== "CANCELLED" ? (
-                                                <button 
-                                                    className="pay-btn" 
-                                                    style={{ padding: "6px 12px", fontSize: "12px", whiteSpace: "nowrap" }}
-                                                    onClick={() => handleAssignClick(booking)}
-                                                >
-                                                    Assign Partner
-                                                </button>
-                                            ) : (
-                                                <span style={{ color: "var(--text-secondary)", fontSize: "14px" }}>—</span>
-                                            )}
+                                            <div style={{ display: "flex", gap: "5px", flexDirection: "column" }}>
+                                                {!booking.partnerName && booking.status !== "CANCELLED" && booking.status !== "REJECTED" && booking.status !== "COMPLETED" && (
+                                                    <button 
+                                                        className="pay-btn" 
+                                                        style={{ padding: "6px 12px", fontSize: "12px", whiteSpace: "nowrap" }}
+                                                        onClick={() => handleAssignClick(booking)}
+                                                    >
+                                                        Assign Partner
+                                                    </button>
+                                                )}
+                                                {booking.status !== "CANCELLED" && booking.status !== "REJECTED" && booking.status !== "COMPLETED" && (
+                                                    <button 
+                                                        className="secondary-btn" 
+                                                        style={{ padding: "6px 12px", fontSize: "12px", whiteSpace: "nowrap", background: "#fee2e2", color: "#dc2626", border: "none", cursor: "pointer", borderRadius: "50px", fontWeight: "600" }}
+                                                        onClick={async () => {
+                                                            if (window.confirm("Reject this booking? The customer will receive a refund and their subscription usage will be restored if applicable.")) {
+                                                                try {
+                                                                    const { updateBookingStatus } = await import("../../../api/bookingApi");
+                                                                    await updateBookingStatus(booking.bookingId, "REJECTED");
+                                                                    if (refreshBookings) refreshBookings();
+                                                                } catch (e) { alert("Failed to reject booking"); }
+                                                            }
+                                                        }}
+                                                    >
+                                                        Reject
+                                                    </button>
+                                                )}
+                                                {(booking.status === "CANCELLED" || booking.status === "REJECTED" || booking.status === "COMPLETED") && booking.partnerName && (
+                                                    <span style={{ color: "var(--text-secondary)", fontSize: "14px" }}>—</span>
+                                                )}
+                                                {(booking.status === "CANCELLED" || booking.status === "REJECTED" || booking.status === "COMPLETED") && !booking.partnerName && (
+                                                    <span style={{ color: "var(--text-secondary)", fontSize: "14px" }}>—</span>
+                                                )}
+                                            </div>
                                         </td>
                                     </tr>
                                 ))

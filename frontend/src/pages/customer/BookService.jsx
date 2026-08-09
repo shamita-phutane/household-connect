@@ -50,46 +50,36 @@ function BookService() {
 
     const minDate = todayIsoDate();
 
+    const [activePlan, setActivePlan] = useState(null);
+
     useEffect(() => {
-
         async function loadServices() {
-
             try {
-
                 const data = await getAllServices();
-
                 setServices(data);
-
-            }
-
-            catch (error) {
-
+                
+                // Fetch user subscriptions if logged in
+                if (user && user.userId) {
+                    const { getSubscriptionsByUser } = await import("../../api/userSubscriptionApi");
+                    const subscriptions = await getSubscriptionsByUser(user.userId);
+                    const active = subscriptions.find(sub => sub.status === "ACTIVE");
+                    setActivePlan(active || null);
+                }
+            } catch (error) {
                 console.error(error);
-
                 setLoadError("Unable to load services right now. Please try again shortly.");
-
-            }
-
-            finally {
-
+            } finally {
                 setLoading(false);
-
             }
-
         }
-
         loadServices();
-
-    }, []);
+    }, [user]);
 
     const selectedService = useMemo(
-
         () => services.find(
             service => String(service.serviceId) === String(formData.serviceId)
         ),
-
         [services, formData.serviceId]
-
     );
 
     function handleChange(event) {
@@ -146,277 +136,136 @@ function BookService() {
 
     }
 
-    async function handleSubmit(event) {
+    const [showUpsell, setShowUpsell] = useState(false);
 
+    function handleSubmit(event) {
         event.preventDefault();
-
         setSubmitError("");
-
         if (!validate()) {
             return;
         }
-
-        setSubmitting(true);
-
-        try {
-
-            const booking = {
-
-                customerId: user.userId,
-
-                serviceId: Number(formData.serviceId),
-
-                date: formData.date,
-
-                bookingTime: formData.bookingTime,
-
-                serviceAddress: formData.serviceAddress.trim()
-
-            };
-
-            const createdBooking = await createBooking(booking);
-
-            navigate(`/customer/payments/${createdBooking.bookingId}`);
-
+        
+        if (activePlan) {
+            handleContinueWithout();
+        } else {
+            setShowUpsell(true);
         }
+    }
 
-        catch (error) {
-
-            console.error(error);
-
-            if (error.response) {
-                setSubmitError(error.response.data.message || "Booking failed. Please try again.");
-            }
-            else {
-                setSubmitError("Unable to connect to server.");
-            }
-
-        }
-
-        finally {
-
-            setSubmitting(false);
-
-        }
-
+    function handleContinueWithout() {
+        const booking = {
+            customerId: user.userId,
+            serviceId: Number(formData.serviceId),
+            date: formData.date,
+            bookingTime: formData.bookingTime,
+            serviceAddress: formData.serviceAddress.trim(),
+            serviceName: selectedService.svcName,
+            basePrice: selectedService.basePrice
+        };
+        navigate(`/customer/payments`, { state: { bookingDetails: booking } });
     }
 
     if (loading) {
-
         return (
-
             <section className="book-service">
-
                 <div className="container">
-
                     <h2>Loading services...</h2>
-
                 </div>
-
             </section>
-
         );
-
     }
 
     if (loadError) {
-
         return (
-
             <section className="book-service">
-
                 <div className="container">
-
                     <h2>{loadError}</h2>
-
                 </div>
-
             </section>
-
         );
-
     }
 
     return (
-
         <section className="book-service">
-
             <div className="container">
-
-                <h1>
-
-                    Book a Service
-
-                </h1>
-
+                <h1>Book a Service</h1>
                 <p className="book-service-subtitle">
-
                     Choose a service, pick a slot and tell us where to come. You'll review the price before paying.
-
                 </p>
-
                 <div className="book-service-layout">
-
-                    <form
-
-                        className="booking-form"
-
-                        onSubmit={handleSubmit}
-                        noValidate
-
-                    >
-
-                        <div className="form-field">
-
-                            <label>Service</label>
-
-                            <select
-
-                                name="serviceId"
-
-                                value={formData.serviceId}
-
-                                onChange={handleChange}
-
-                            >
-
-                                <option value="">
-
-                                    Select a service
-
-                                </option>
-
-                                {
-
-                                    services.map(service => (
-
-                                        <option
-
-                                            key={service.serviceId}
-
-                                            value={service.serviceId}
-
-                                        >
-
-                                            {service.svcName} — ₹{service.basePrice}
-
-                                        </option>
-
-                                    ))
-
-                                }
-
-                            </select>
-
-                            {fieldErrors.serviceId &&
-                                <span className="field-error">{fieldErrors.serviceId}</span>
-                            }
-
-                        </div>
-
-                        <div className="form-row">
-
-                            <div className="form-field">
-
-                                <label>Date</label>
-
-                                <input
-
-                                    type="date"
-
-                                    name="date"
-
-                                    min={minDate}
-
-                                    value={formData.date}
-
-                                    onChange={handleChange}
-
-                                />
-
-                                {fieldErrors.date &&
-                                    <span className="field-error">{fieldErrors.date}</span>
-                                }
-
+                    {showUpsell ? (
+                        <div className="upsell-container" style={{ padding: "40px", background: "var(--surface)", borderRadius: "16px", border: "1px solid var(--accent-color)", textAlign: "center", boxShadow: "0 10px 25px rgba(0,0,0,0.2)" }}>
+                            <h3 style={{ fontSize: "1.8rem", marginBottom: "15px", color: "var(--accent-color)" }}>Save more with a plan</h3>
+                            <p style={{ color: "var(--text-secondary)", marginBottom: "30px", fontSize: "1.1rem" }}>Get up to 15% off this booking and future services by joining a membership plan.</p>
+                            <div style={{ display: "flex", gap: "20px", justifyContent: "center", flexWrap: "wrap" }}>
+                                <button type="button" onClick={() => navigate("/plans")} className="primary-btn" style={{ padding: "12px 24px", fontSize: "1rem" }}>Buy Subscription</button>
+                                <button type="button" onClick={handleContinueWithout} className="secondary-btn" style={{ padding: "12px 24px", fontSize: "1rem", background: "transparent", color: "var(--text-primary)", border: "1px solid var(--border)", borderRadius: "8px", cursor: "pointer" }}>Continue Without</button>
                             </div>
-
-                            <div className="form-field">
-
-                                <label>Time</label>
-
-                                <input
-
-                                    type="time"
-
-                                    name="bookingTime"
-
-                                    value={formData.bookingTime}
-
-                                    onChange={handleChange}
-
-                                />
-
-                                {fieldErrors.bookingTime &&
-                                    <span className="field-error">{fieldErrors.bookingTime}</span>
-                                }
-
-                            </div>
-
                         </div>
-
-                        <div className="form-field">
-
-                            <label>Service Address</label>
-
-                            <textarea
-
-                                rows="4"
-
-                                name="serviceAddress"
-
-                                placeholder="House / flat number, street, area, city"
-
-                                value={formData.serviceAddress}
-
-                                onChange={handleChange}
-
-                            />
-
-                            {fieldErrors.serviceAddress &&
-                                <span className="field-error">{fieldErrors.serviceAddress}</span>
-                            }
-
-                        </div>
-
-                        {submitError &&
-
-                            <p className="form-error">
-
-                                {submitError}
-
-                            </p>
-
-                        }
-
-                        <button
-
-                            type="submit"
-
-                            disabled={submitting}
-
+                    ) : (
+                        <form
+                            className="booking-form"
+                            onSubmit={handleSubmit}
+                            noValidate
                         >
+                            <div className="form-field">
+                                <label>Service</label>
+                                <select
+                                    name="serviceId"
+                                    value={formData.serviceId}
+                                    onChange={handleChange}
+                                >
+                                    <option value="">Select a service</option>
+                                    {services.map(service => (
+                                        <option key={service.serviceId} value={service.serviceId}>
+                                            {service.svcName} — ₹{service.basePrice}
+                                        </option>
+                                    ))}
+                                </select>
+                                {fieldErrors.serviceId && <span className="field-error">{fieldErrors.serviceId}</span>}
+                            </div>
 
-                            {
+                            <div className="form-row">
+                                <div className="form-field">
+                                    <label>Date</label>
+                                    <input
+                                        type="date"
+                                        name="date"
+                                        min={minDate}
+                                        value={formData.date}
+                                        onChange={handleChange}
+                                    />
+                                    {fieldErrors.date && <span className="field-error">{fieldErrors.date}</span>}
+                                </div>
+                                <div className="form-field">
+                                    <label>Time</label>
+                                    <input
+                                        type="time"
+                                        name="bookingTime"
+                                        value={formData.bookingTime}
+                                        onChange={handleChange}
+                                    />
+                                    {fieldErrors.bookingTime && <span className="field-error">{fieldErrors.bookingTime}</span>}
+                                </div>
+                            </div>
 
-                                submitting
-                                    ? "Creating Booking..."
-                                    : "Continue to Payment"
+                            <div className="form-field">
+                                <label>Service Address</label>
+                                <textarea
+                                    rows="4"
+                                    name="serviceAddress"
+                                    placeholder="House / flat number, street, area, city"
+                                    value={formData.serviceAddress}
+                                    onChange={handleChange}
+                                />
+                                {fieldErrors.serviceAddress && <span className="field-error">{fieldErrors.serviceAddress}</span>}
+                            </div>
 
-                            }
-
-                        </button>
-
-                    </form>
+                            <button type="submit">
+                                Continue to Payment
+                            </button>
+                        </form>
+                    )}
 
                     <aside className="booking-summary">
 
