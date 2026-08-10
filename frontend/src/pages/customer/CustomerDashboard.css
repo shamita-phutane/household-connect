@@ -92,16 +92,6 @@
 
 }
 
-.dashboard-card:hover{
-
-    transform:translateY(-6px);
-
-    border-color:var(--accent-color);
-
-    box-shadow:var(--box-shadow);
-
-}
-
 .card-icon{
 
     font-size:26px;
@@ -223,16 +213,6 @@
     padding:24px 30px;
 
     border-bottom:1px solid var(--border);
-
-    cursor:pointer;
-
-    transition:var(--transition);
-
-}
-
-.booking-row:hover{
-
-    background:var(--surface-secondary);
 
 }
 

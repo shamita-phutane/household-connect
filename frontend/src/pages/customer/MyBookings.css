@@ -114,13 +114,6 @@
 
 }
 
-.booking-card:hover{
-
-    border-color:var(--accent-color);
-
-    transform:translateY(-4px);
-
-}
 
 .booking-main h3{
 

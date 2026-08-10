@@ -98,23 +98,23 @@ function PartnerDashboard() {
                     </div>
                 </div>
 
-                <div className="stats-grid">
-                    <div className="dashboard-card">
+                <div className="stats-grid" style={{ gap: "16px", marginBottom: "30px" }}>
+                    <div className="dashboard-card" style={{ padding: "20px", border: "1px solid rgba(255,255,255,0.05)", boxShadow: "none" }}>
                         <FaClipboardList className="card-icon"/>
                         <h3>Total Bookings</h3>
                         <span>{totalBookings}</span>
                     </div>
-                    <div className="dashboard-card">
+                    <div className="dashboard-card" style={{ padding: "20px", border: "1px solid rgba(255,255,255,0.05)", boxShadow: "none" }}>
                         <FaCalendarCheck className="card-icon"/>
                         <h3>Completed</h3>
                         <span>{completedBookings}</span>
                     </div>
-                    <div className="dashboard-card">
+                    <div className="dashboard-card" style={{ padding: "20px", border: "1px solid rgba(255,255,255,0.05)", boxShadow: "none" }}>
                         <FaMoneyBillWave className="card-icon"/>
                         <h3>Pending / Accepted</h3>
                         <span>{pendingBookings}</span>
                     </div>
-                    <div className="dashboard-card">
+                    <div className="dashboard-card" style={{ padding: "20px", border: "1px solid rgba(255,255,255,0.05)", boxShadow: "none" }}>
                         <FaPiggyBank className="card-icon"/>
                         <h3>Earnings (80%)</h3>
                         <span>₹{totalEarnings.toFixed(0)}</span>
@@ -129,7 +129,7 @@ function PartnerDashboard() {
                 ) : (
                     <div className="booking-list" style={{ marginTop: '0', marginBottom: '60px' }}>
                         {bookings.map(booking => (
-                            <div key={booking.bookingId} className="booking-card">
+                            <div key={booking.bookingId} className="booking-card" style={{ borderLeft: booking.status === "PENDING" ? "4px solid var(--accent-color)" : "1px solid var(--border)" }}>
                                 <div className="booking-main">
                                     <h3>{booking.serviceName}</h3>
                                     <p>{booking.date} · {booking.bookingTime}</p>

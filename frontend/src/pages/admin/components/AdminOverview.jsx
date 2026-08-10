@@ -42,7 +42,12 @@ export default function AdminOverview({ users, bookings, payments, services, ref
         return true;
     });
 
-    const sortedBookings = [...filteredBookings].sort((a, b) => (a.date < b.date ? 1 : -1));
+    const [sortDesc, setSortDesc] = useState(true);
+
+    const sortedBookings = [...filteredBookings].sort((a, b) => {
+        if (a.date === b.date) return 0;
+        return sortDesc ? (a.date < b.date ? 1 : -1) : (a.date > b.date ? 1 : -1);
+    });
 
     async function handleAssignClick(booking) {
         setAssigningBooking(booking);
@@ -72,16 +77,8 @@ export default function AdminOverview({ users, bookings, payments, services, ref
 
     return (
         <div>
-            <style>
-                {`
-                    .admin-table-row:hover {
-                        background-color: rgba(255,255,255,0.03);
-                    }
-                `}
-            </style>
-            
             {/* Stats Cards */}
-            <div className="stats-grid" style={{ marginBottom: "40px" }}>
+            <div className="stats-grid" style={{ marginBottom: "24px", gap: "16px" }}>
                 <div className="dashboard-card">
                     <FaUsers className="card-icon" />
                     <h3>Total Customers</h3>
@@ -111,23 +108,17 @@ export default function AdminOverview({ users, bookings, payments, services, ref
                 {/* Filters Row */}
                 <div style={{ marginBottom: "24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "20px" }}>
                     <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                        {["ALL", "PENDING", "ASSIGNED", "COMPLETED", "CANCELLED"].map(status => (
-                            <button 
-                                key={status}
-                                className="pay-btn" 
-                                onClick={() => setStatusFilter(status)}
-                                style={{ 
-                                    background: statusFilter === status ? "var(--accent-color)" : "transparent", 
-                                    color: statusFilter === status ? "#000" : "var(--accent-color)",
-                                    border: "1px solid var(--accent-color)",
-                                    padding: "6px 16px",
-                                    fontSize: "14px",
-                                    fontWeight: "500"
-                                }}
-                            >
-                                {status.charAt(0) + status.slice(1).toLowerCase()}
-                            </button>
-                        ))}
+                        <select 
+                            value={statusFilter} 
+                            onChange={e => setStatusFilter(e.target.value)}
+                            style={{ padding: "8px 12px", borderRadius: "6px", background: "var(--background)", color: "var(--text-primary)", border: "1px solid var(--border)", fontSize: "14px" }}
+                        >
+                            <option value="ALL">Status: All</option>
+                            <option value="PENDING">Status: Pending</option>
+                            <option value="ASSIGNED">Status: Assigned</option>
+                            <option value="COMPLETED">Status: Completed</option>
+                            <option value="CANCELLED">Status: Cancelled</option>
+                        </select>
                     </div>
 
                     <div style={{ display: "flex", gap: "15px" }}>
@@ -163,7 +154,12 @@ export default function AdminOverview({ users, bookings, payments, services, ref
                                 <th style={{ padding: "16px 12px", fontSize: "16px", fontWeight: "600" }}>Customer</th>
                                 <th style={{ padding: "16px 12px", fontSize: "16px", fontWeight: "600" }}>Service</th>
                                 <th style={{ padding: "16px 12px", fontSize: "16px", fontWeight: "600" }}>City / Location</th>
-                                <th style={{ padding: "16px 12px", fontSize: "16px", fontWeight: "600" }}>Date</th>
+                                <th 
+                                    style={{ padding: "16px 12px", fontSize: "16px", fontWeight: "600", cursor: "pointer", userSelect: "none" }}
+                                    onClick={() => setSortDesc(!sortDesc)}
+                                >
+                                    Date {sortDesc ? "▾" : "▴"}
+                                </th>
                                 <th style={{ padding: "16px 12px", fontSize: "16px", fontWeight: "600" }}>Status</th>
                                 <th style={{ padding: "16px 12px", fontSize: "16px", fontWeight: "600" }}>Partner</th>
                                 <th style={{ padding: "16px 12px", fontSize: "16px", fontWeight: "600" }}>Amount</th>
@@ -179,7 +175,7 @@ export default function AdminOverview({ users, bookings, payments, services, ref
                                 </tr>
                             ) : (
                                 sortedBookings.map(booking => (
-                                    <tr key={booking.bookingId} className="admin-table-row" style={{ borderBottom: "1px solid var(--border)", transition: "background 0.2s" }}>
+                                    <tr key={booking.bookingId} style={{ borderBottom: "1px solid var(--border)", borderLeft: booking.status === "PENDING" ? "4px solid var(--accent-color)" : "4px solid transparent" }}>
                                         <td style={{ padding: "16px 12px", verticalAlign: "middle", fontWeight: "600", fontSize: "14px" }}>
                                             {booking.customerName || "N/A"}
                                         </td>
