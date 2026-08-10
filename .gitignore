@@ -36,6 +36,7 @@ build/
 # .NET
 NotificationService/bin/
 NotificationService/obj/
+NotificationService/.vs/
 
 # React
 frontend/node_modules/
