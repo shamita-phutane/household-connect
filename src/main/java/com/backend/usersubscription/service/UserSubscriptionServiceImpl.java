@@ -17,6 +17,7 @@ import com.backend.usersubscription.dto.UserSubscriptionRequestDto;
 import com.backend.usersubscription.dto.UserSubscriptionResponseDto;
 import com.backend.usersubscription.entity.UserSubscription;
 import com.backend.usersubscription.repository.UserSubscriptionRepository;
+import com.backend.notification.service.NotificationClient;
 import com.backend.payment.dto.PaymentVerificationRequestDto;
 import com.razorpay.Order;
 import com.razorpay.RazorpayClient;
@@ -33,6 +34,7 @@ public class UserSubscriptionServiceImpl implements UserSubscriptionService {
     private final UserSubscriptionRepository userSubscriptionRepository;
     private final UserRepository userRepository;
     private final SubscriptionPlanRepository subscriptionPlanRepository;
+    private final NotificationClient notificationClient;
     private final RazorpayClient razorpayClient;
     private final String razorpayKeySecret;
 
@@ -40,11 +42,13 @@ public class UserSubscriptionServiceImpl implements UserSubscriptionService {
             UserSubscriptionRepository userSubscriptionRepository,
             UserRepository userRepository,
             SubscriptionPlanRepository subscriptionPlanRepository,
+            NotificationClient notificationClient,
             RazorpayClient razorpayClient,
             @Value("${razorpay.key.secret}") String razorpayKeySecret) {
         this.userSubscriptionRepository = userSubscriptionRepository;
         this.userRepository = userRepository;
         this.subscriptionPlanRepository = subscriptionPlanRepository;
+        this.notificationClient = notificationClient;
         this.razorpayClient = razorpayClient;
         this.razorpayKeySecret = razorpayKeySecret;
     }
@@ -131,6 +135,13 @@ public class UserSubscriptionServiceImpl implements UserSubscriptionService {
         subscription.setRemainingUses(max);
 
         UserSubscription saved = userSubscriptionRepository.save(subscription);
+        
+        // Send notification
+        String message = String.format("Congratulations! You have successfully purchased the %s subscription. You have %d uses remaining.", 
+                saved.getPlan().getPlanName(), max);
+        notificationClient.sendNotificationAsync(saved.getUser().getUserId(), 
+                saved.getUser().getEmail(), message, "SUBSCRIPTION_PURCHASED", saved.getPlan().getPrice(), saved.getPlan().getPlanName(), java.time.LocalDateTime.now());
+                
         return mapToResponseDto(saved);
     }
 
@@ -189,6 +200,12 @@ public class UserSubscriptionServiceImpl implements UserSubscriptionService {
         subscription.setRemainingUses(0);
 
         UserSubscription saved = userSubscriptionRepository.save(subscription);
+        
+        // Send notification
+        String message = "Your subscription has been cancelled. Please note that no refund will be provided for cancelled subscriptions.";
+        notificationClient.sendNotificationAsync(saved.getUser().getUserId(), 
+                saved.getUser().getEmail(), message, "SUBSCRIPTION_CANCELLED");
+                
         return mapToResponseDto(saved);
     }
 

@@ -23,6 +23,7 @@ import com.backend.payment.repository.PaymentRepository;
 import com.backend.security.AuthUtils;
 import com.backend.services.entity.Services;
 import com.backend.services.repository.ServicesRepository;
+import com.backend.notification.service.NotificationClient;
 import com.backend.user.entity.User;
 import com.backend.user.repository.UserRepository;
 import com.backend.usersubscription.entity.UserSubscription;
@@ -40,6 +41,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final UserSubscriptionRepository userSubscriptionRepository;
     private final ServicesRepository servicesRepository;
     private final UserRepository userRepository;
+    private final NotificationClient notificationClient;
     private final RazorpayClient razorpayClient;
     private final String razorpayKeyId;
 
@@ -48,6 +50,7 @@ public class PaymentServiceImpl implements PaymentService {
             UserSubscriptionRepository userSubscriptionRepository,
             ServicesRepository servicesRepository,
             UserRepository userRepository,
+            NotificationClient notificationClient,
             RazorpayClient razorpayClient,
             @Value("${razorpay.key.id}") String razorpayKeyId,
             @Value("${razorpay.key.secret}") String razorpayKeySecret) {
@@ -56,6 +59,7 @@ public class PaymentServiceImpl implements PaymentService {
         this.userSubscriptionRepository = userSubscriptionRepository;
         this.servicesRepository = servicesRepository;
         this.userRepository = userRepository;
+        this.notificationClient = notificationClient;
         this.razorpayClient = razorpayClient;
         this.razorpayKeyId = razorpayKeyId != null ? razorpayKeyId.trim() : null;
         this.razorpayKeySecret = razorpayKeySecret != null ? razorpayKeySecret.trim() : null;
@@ -171,6 +175,12 @@ public class PaymentServiceImpl implements PaymentService {
                 .build();
                 
         Payment savedPayment = paymentRepository.save(payment);
+        
+        // Send notification asynchronously
+        String message = String.format("Your payment of ₹%.2f was successful! Your booking for '%s' is confirmed for %s at %s.", 
+                finalAmount, service.getSvcName(), requestDto.getDate(), requestDto.getBookingTime());
+        java.time.LocalDateTime bookingDateTime = java.time.LocalDateTime.of(requestDto.getDate(), requestDto.getBookingTime());
+        notificationClient.sendNotificationAsync(customer.getUserId(), customer.getEmail(), message, "BOOKING_CONFIRMED", finalAmount, service.getSvcName(), bookingDateTime);
         
         return convertToResponse(savedPayment);
     }

@@ -10,6 +10,7 @@ import com.backend.services.entity.Services;
 import com.backend.services.repository.ServicesRepository;
 import com.backend.usersubscription.entity.UserSubscription;
 import com.backend.usersubscription.repository.UserSubscriptionRepository;
+import com.backend.notification.service.NotificationClient;
 
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -32,17 +33,20 @@ public class BookingServiceImpl implements BookingService {
     private final UserRepository userRepository;
     private final ServicesRepository servicesRepository;
     private final UserSubscriptionRepository userSubscriptionRepository;
+    private final NotificationClient notificationClient;
 
     public BookingServiceImpl(
             BookingRepository bookingRepository,
             UserRepository userRepository,
             ServicesRepository servicesRepository,
-            UserSubscriptionRepository userSubscriptionRepository) {
+            UserSubscriptionRepository userSubscriptionRepository,
+            NotificationClient notificationClient) {
 
         this.bookingRepository = bookingRepository;
         this.userRepository = userRepository;
         this.servicesRepository = servicesRepository;
         this.userSubscriptionRepository = userSubscriptionRepository;
+        this.notificationClient = notificationClient;
     }
 
     @Override
@@ -142,9 +146,14 @@ public class BookingServiceImpl implements BookingService {
         }
 
         booking.setPartner(partner);
+        Booking savedBooking = bookingRepository.save(booking);
 
-        return convertToResponse(
-                bookingRepository.save(booking));
+        // Send partner assignment notification asynchronously
+        String message = String.format("You've been assigned a new booking for %s on %s.", 
+                savedBooking.getService().getSvcName(), savedBooking.getDate());
+        notificationClient.sendNotificationAsync(partner.getUserId(), partner.getEmail(), message, "BOOKING_ASSIGNED");
+
+        return convertToResponse(savedBooking);
     }
 
     @Override
@@ -212,6 +221,16 @@ public class BookingServiceImpl implements BookingService {
                     }
                 }
             }
+            
+            // Send cancellation notification
+            String message = String.format("Your booking for '%s' on %s at %s has been %s.",
+                    booking.getService().getSvcName(), booking.getDate(), booking.getBookingTime(), status.toString().toLowerCase());
+            
+            java.time.LocalDateTime bookingDateTime = java.time.LocalDateTime.of(booking.getDate(), booking.getBookingTime());
+            Double finalAmount = booking.getPayment() != null ? booking.getPayment().getAmount() : booking.getService().getBasePrice();
+            
+            notificationClient.sendNotificationAsync(booking.getCustomer().getUserId(), 
+                    booking.getCustomer().getEmail(), message, "BOOKING_" + status.toString(), finalAmount, booking.getService().getSvcName(), bookingDateTime);
         }
 
         booking.setStatus(status);

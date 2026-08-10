@@ -16,6 +16,7 @@ import com.backend.user.dto.UserRequestDto;
 import com.backend.user.dto.UserResponseDto;
 import com.backend.user.entity.User;
 import com.backend.user.repository.UserRepository;
+import com.backend.notification.service.NotificationClient;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -23,13 +24,16 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final com.backend.services.repository.ServicesRepository servicesRepository;
+    private final NotificationClient notificationClient;
 
     public UserServiceImpl(UserRepository userRepository,
                            PasswordEncoder passwordEncoder,
-                           com.backend.services.repository.ServicesRepository servicesRepository) {
+                           com.backend.services.repository.ServicesRepository servicesRepository,
+                           NotificationClient notificationClient) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.servicesRepository = servicesRepository;
+        this.notificationClient = notificationClient;
     }
 
     @Override
@@ -74,6 +78,10 @@ public class UserServiceImpl implements UserService {
         }
 
         User savedUser = userRepository.save(user);
+
+        // Send registration notification asynchronously
+        String message = String.format("Welcome to Household Connect, %s! Your account has been created.", savedUser.getName());
+        notificationClient.sendNotificationAsync(savedUser.getUserId(), savedUser.getEmail(), message, "ACCOUNT_CREATED");
 
         return convertToResponse(savedUser);
     }
